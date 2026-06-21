@@ -78,11 +78,11 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
   const getSourceStyle = (src: FoodItem["source"]) => {
     switch (src) {
       case "receipt":
-        return "bg-purple-100 text-purple-700 ring-purple-100";
+        return "bg-clay/10 text-clay-text ring-clay/10";
       case "image":
-        return "bg-blue-100 text-blue-700 ring-blue-100";
+        return "bg-sage/20 text-olive ring-sage/10";
       case "voice":
-        return "bg-indigo-100 text-indigo-700 ring-indigo-100";
+        return "bg-olive/10 text-olive ring-olive/5";
       default:
         return "bg-slate-100 text-slate-700 ring-slate-100";
     }
@@ -102,11 +102,11 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-5">
-      <div className="flex justify-between items-center pb-3 border-b border-slate-50">
+    <div className="card bg-white/85 p-5 shadow-sm space-y-5">
+      <div className="flex justify-between items-center pb-3 border-b border-slate-100">
         <div>
-          <h3 className="font-display text-lg font-bold text-slate-800 flex items-center gap-2">
-            <UtensilsCrossed className="w-5 h-5 text-emerald-500" />
+          <h3 className="font-display text-lg font-bold text-slate-800 flex items-center gap-2 font-serif">
+            <UtensilsCrossed className="w-5 h-5 text-olive" />
             食品リスト ＆ 内訳表示
           </h3>
           <p className="text-xs text-slate-500">
@@ -116,7 +116,7 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
 
         <button
           onClick={() => setIsAddingManual(!isAddingManual)}
-          className="flex items-center gap-1 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 text-slate-600 hover:text-emerald-600 text-xs font-semibold px-3 py-1.5 rounded-xl transition"
+          className="flex items-center gap-1 bg-sage/15 hover:bg-sage/25 border border-sage/10 text-olive text-xs font-semibold px-3 py-1.5 rounded-xl transition cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           手動追加
@@ -146,7 +146,7 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
                 value={originalName}
                 onChange={(e) => setOriginalName(e.target.value)}
                 placeholder="例: pão francês, frango grelhado..."
-                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:border-emerald-500 focus:outline-none"
+                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:border-olive focus:outline-none"
               />
             </div>
             <div>
@@ -157,7 +157,7 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
                 value={japaneseName}
                 onChange={(e) => setJapaneseName(e.target.value)}
                 placeholder="例: フランスパン, 鶏肉グリル..."
-                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:border-emerald-500 focus:outline-none"
+                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:border-olive focus:outline-none"
               />
             </div>
           </div>
@@ -171,7 +171,7 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0.00"
-                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:border-emerald-500 focus:outline-none"
+                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:border-olive focus:outline-none"
               />
             </div>
             <div>
@@ -278,7 +278,7 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
 
           <button
             type="submit"
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 rounded-xl transition duration-150"
+            className="w-full bg-olive hover:bg-opacity-90 text-white font-bold py-2 rounded-xl transition duration-150 font-serif cursor-pointer"
           >
             食材登録を完了
           </button>
@@ -324,7 +324,7 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
                         分量: <span className="font-medium text-slate-600">{item.quantity}</span>
                       </span>
                       {item.price > 0 && (
-                        <span className="text-emerald-600 text-xs font-semibold">
+                        <span className="text-clay-text text-xs font-semibold">
                           R$ {item.price.toFixed(2)}
                           <span className="text-[9px] text-slate-400 font-normal ml-0.5">({Math.round(item.price * 28)}円相当)</span>
                         </span>
@@ -361,17 +361,17 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
                         <span className="text-[9px] font-bold text-slate-400 block uppercase">カロリー</span>
                         <span className="text-xs font-extrabold text-slate-800">{item.nutrition.calories} kcal</span>
                       </div>
-                      <div className="bg-orange-50/30 rounded-lg p-2 border border-orange-100/50">
-                        <span className="text-[9px] font-bold text-orange-500 block uppercase">たんぱく質</span>
-                        <span className="text-xs font-extrabold text-orange-600">{item.nutrition.protein} g</span>
+                      <div className="bg-orange-50/10 rounded-lg p-2 border border-clay/10">
+                        <span className="text-[9px] font-bold text-clay-text block uppercase">たんぱく質</span>
+                        <span className="text-xs font-extrabold text-clay">{item.nutrition.protein} g</span>
                       </div>
-                      <div className="bg-amber-50/30 rounded-lg p-2 border border-amber-100/50">
-                        <span className="text-[9px] font-bold text-amber-500 block uppercase">脂質</span>
-                        <span className="text-xs font-extrabold text-amber-600">{item.nutrition.fat} g</span>
+                      <div className="bg-amber-50/10 rounded-lg p-2 border border-clay-text/10">
+                        <span className="text-[9px] font-bold text-clay block uppercase">脂質</span>
+                        <span className="text-xs font-extrabold text-clay-text">{item.nutrition.fat} g</span>
                       </div>
-                      <div className="bg-teal-50/30 rounded-lg p-2 border border-teal-100/50">
-                        <span className="text-[9px] font-bold text-teal-600 block uppercase">炭水化物</span>
-                        <span className="text-xs font-extrabold text-teal-700">{item.nutrition.carbohydrates} g</span>
+                      <div className="bg-teal-50/10 rounded-lg p-2 border border-sage/10">
+                        <span className="text-[9px] font-bold text-olive block uppercase">炭水化物</span>
+                        <span className="text-xs font-extrabold text-olive">{item.nutrition.carbohydrates} g</span>
                       </div>
                     </div>
 

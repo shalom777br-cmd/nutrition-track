@@ -337,25 +337,25 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] text-slate-800 font-sans selection:bg-emerald-500/10">
+    <div className="min-h-screen bg-[#F7F4F0] text-[#4A453F] font-sans selection:bg-clay/10">
       
       {/* Visual Header Grid Panel */}
-      <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-slate-100 px-6 py-4">
+      <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-sage/20 px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center text-white shrink-0 shadow-md shadow-emerald-500/20">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-olive to-sage flex items-center justify-center text-white shrink-0 shadow-md shadow-olive/10">
               <HeartPulse className="w-6 h-6 animate-pulse" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-display font-extrabold text-xl tracking-tight text-slate-900">
+                <h1 className="font-display font-extrabold text-xl tracking-tight text-[#4A453F] font-serif">
                   NutriGasto AI
                 </h1>
-                <span className="bg-slate-100 text-slate-600 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                <span className="bg-clay/10 text-clay-text text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                   HEALTH MVP
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[#6B705C]">
                 ポルトガル語レシート・食事画像・音声メモ自動栄養＆食費集計アプリ
               </p>
             </div>
@@ -363,7 +363,7 @@ export default function App() {
 
           {/* Quick Date Control Grid */}
           <div className="flex items-center gap-3.5 flex-wrap w-full md:w-auto">
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/60 p-1.5 rounded-xl w-full sm:w-auto justify-between sm:justify-start">
+            <div className="flex items-center gap-2 bg-white/70 border border-sage/20 p-1.5 rounded-xl w-full sm:w-auto justify-between sm:justify-start shadow-xs">
               <span className="text-xs font-semibold text-slate-500 pl-2">対象日：</span>
               <select
                 value={activeDate}
@@ -371,7 +371,7 @@ export default function App() {
                   setActiveDate(e.target.value);
                   setApiError(null);
                 }}
-                className="bg-white border border-slate-200 rounded-lg text-xs font-bold px-3 py-1.5 text-slate-700 outline-none focus:border-emerald-500"
+                className="bg-white border border-slate-200 rounded-lg text-xs font-bold px-3 py-1.5 text-slate-700 outline-none focus:border-olive"
               >
                 <option value="2026-06-21">2026/06/21 (本日)</option>
                 <option value="2026-06-20">2026/06/20 (昨日)</option>
@@ -384,7 +384,7 @@ export default function App() {
 
             <button
               onClick={handleResetDefaults}
-              className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 font-medium text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 transition duration-150 shrink-0"
+              className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 font-medium text-xs bg-white hover:bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 transition duration-150 shrink-0 cursor-pointer"
               title="データをデフォルトにリセット"
             >
               <RefreshCw className="w-3.5 h-3.5" />
@@ -402,9 +402,9 @@ export default function App() {
           <section className="lg:col-span-5 space-y-6">
             
             {/* Analyzer Console Card */}
-            <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-5">
+            <div className="card bg-white/85 p-6 shadow-sm space-y-5">
               <div>
-                <h2 className="font-display text-lg font-bold text-slate-800">
+                <h2 className="font-display text-lg font-bold text-slate-800 font-serif">
                   AIマルチモーダル解析入力
                 </h2>
                 <p className="text-xs text-slate-500">
@@ -413,13 +413,13 @@ export default function App() {
               </div>
 
               {/* Analyzer Sources Switch Tabs */}
-              <div className="grid grid-cols-4 p-1 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="grid grid-cols-4 p-1 bg-sage/10 rounded-xl border border-sage/5">
                 <button
                   onClick={() => setActiveTab("text")}
-                  className={`flex flex-col items-center gap-1.5 py-2.5 text-[10px] font-bold rounded-lg transition ${
+                  className={`flex flex-col items-center gap-1.5 py-2.5 text-[10px] font-bold rounded-lg transition cursor-pointer ${
                     activeTab === "text"
-                      ? "bg-white text-emerald-600 shadow-xs"
-                      : "text-slate-500 hover:text-slate-800"
+                      ? "bg-white text-olive shadow-xs"
+                      : "text-[#6B705C] hover:text-slate-800"
                   }`}
                 >
                   <FileText className="w-4.5 h-4.5" />
@@ -427,10 +427,10 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setActiveTab("receipt")}
-                  className={`flex flex-col items-center gap-1.5 py-2.5 text-[10px] font-bold rounded-lg transition flex-wrap shrink-0 ${
+                  className={`flex flex-col items-center gap-1.5 py-2.5 text-[10px] font-bold rounded-lg transition flex-wrap shrink-0 cursor-pointer ${
                     activeTab === "receipt"
-                      ? "bg-white text-emerald-600 shadow-xs"
-                      : "text-slate-500 hover:text-slate-800"
+                      ? "bg-white text-olive shadow-xs"
+                      : "text-[#6B705C] hover:text-slate-800"
                   }`}
                 >
                   <Upload className="w-4.5 h-4.5" />
@@ -438,10 +438,10 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setActiveTab("image")}
-                  className={`flex flex-col items-center gap-1.5 py-2.5 text-[10px] font-bold rounded-lg transition ${
+                  className={`flex flex-col items-center gap-1.5 py-2.5 text-[10px] font-bold rounded-lg transition cursor-pointer ${
                     activeTab === "image"
-                      ? "bg-white text-emerald-600 shadow-xs"
-                      : "text-slate-500 hover:text-slate-800"
+                      ? "bg-white text-olive shadow-xs"
+                      : "text-[#6B705C] hover:text-slate-800"
                   }`}
                 >
                   <Camera className="w-4.5 h-4.5" />
@@ -449,10 +449,10 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setActiveTab("voice")}
-                  className={`flex flex-col items-center gap-1.5 py-2.5 text-[10px] font-bold rounded-lg transition ${
+                  className={`flex flex-col items-center gap-1.5 py-2.5 text-[10px] font-bold rounded-lg transition cursor-pointer ${
                     activeTab === "voice"
-                      ? "bg-white text-emerald-600 shadow-xs"
-                      : "text-slate-500 hover:text-slate-800"
+                      ? "bg-white text-olive shadow-xs"
+                      : "text-[#6B705C] hover:text-slate-800"
                   }`}
                 >
                   <Mic className="w-4.5 h-4.5" />
@@ -470,7 +470,7 @@ export default function App() {
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       placeholder="食べたもののテキストを自由に入力してください。例：マクドナルドでビッグマック1個とポテトMサイズを食べた、または frango grelhado (鶏胸グリル) と arroz (米) を200gずつ食べた"
-                      className="w-full h-32 text-xs border border-slate-200 focus:border-emerald-400 focus:ring-0 p-3 outline-none rounded-xl bg-slate-50/20 placeholder:text-slate-400 leading-relaxed"
+                      className="w-full h-32 text-xs border border-sage/30 focus:border-olive focus:ring-0 p-3 outline-none rounded-xl bg-white/55 placeholder:text-slate-450 leading-relaxed"
                     />
                   </div>
                 )}
@@ -507,9 +507,9 @@ export default function App() {
                         </button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center border border-dashed border-slate-250 rounded-2xl hover:bg-slate-50/50 p-6 cursor-pointer transition">
+                      <label className="flex flex-col items-center justify-center border border-dashed border-sage/40 rounded-2xl hover:bg-sage/10 p-6 cursor-pointer transition">
                         <Upload className="w-8 h-8 text-slate-400 mb-2.5" />
-                        <span className="text-xs font-semibold text-slate-700">ポルトガル語レシートを添付</span>
+                        <span className="text-xs font-semibold text-[#4A453F]">ポルトガル語レシートを添付</span>
                         <span className="text-[10px] text-slate-450 mt-1">PNG, JPG, WEBP formats</span>
                         <input
                           type="file"
@@ -554,9 +554,9 @@ export default function App() {
                         </button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center border border-dashed border-slate-250 rounded-2xl hover:bg-slate-50/50 p-6 cursor-pointer transition">
+                      <label className="flex flex-col items-center justify-center border border-dashed border-sage/40 rounded-2xl hover:bg-sage/10 p-6 cursor-pointer transition">
                         <Camera className="w-8 h-8 text-slate-400 mb-2.5" />
-                        <span className="text-xs font-semibold text-slate-700">お食事の写真をアップロード</span>
+                        <span className="text-xs font-semibold text-[#4A453F]">お食事の写真をアップロード</span>
                         <span className="text-[10px] text-slate-450 mt-1">または直接カメラ撮影</span>
                         <input
                           type="file"
@@ -581,7 +581,7 @@ export default function App() {
                         <button
                           type="button"
                           onClick={startRecording}
-                          className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white transition shadow-md shadow-emerald-500/10 active:scale-95"
+                          className="flex items-center justify-center w-12 h-12 rounded-full bg-olive hover:bg-opacity-90 text-white transition shadow-md shadow-olive/10 active:scale-95 cursor-pointer"
                         >
                           <Mic className="w-5 h-5" />
                         </button>
@@ -609,7 +609,7 @@ export default function App() {
                         <div className="w-full space-y-3">
                           <div className="flex items-center justify-between bg-white border border-slate-200/60 px-3 py-2 rounded-xl">
                             <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-                              <FileAudio className="w-4 h-4 text-emerald-500" />
+                              <FileAudio className="w-4 h-4 text-olive" />
                               録音完了ボイス.webm
                             </span>
                             <button
@@ -640,7 +640,7 @@ export default function App() {
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       placeholder="補足テキスト記述がある場合はこちらに入力（任意）"
-                      className="w-full text-xs font-sans p-2 border border-slate-200 rounded-xl bg-white outline-none focus:border-emerald-500"
+                      className="w-full text-xs font-sans p-2 border border-slate-200 rounded-xl bg-white outline-none focus:border-olive"
                     />
                   </div>
                 )}
@@ -664,10 +664,10 @@ export default function App() {
               <button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing}
-                className={`w-full flex items-center justify-center gap-2 font-display text-xs font-bold py-3 px-4 rounded-2xl transition duration-200 transform active:scale-[0.99] ${
+                className={`w-full flex items-center justify-center gap-2 font-display text-xs font-bold py-3 px-4 rounded-2xl transition duration-200 transform active:scale-[0.99] cursor-pointer ${
                   isAnalyzing
-                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                    : "bg-gradient-to-tr from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md shadow-emerald-500/10"
+                    ? "bg-slate-150 text-slate-400 cursor-not-allowed"
+                    : "bg-[#6B705C] hover:bg-opacity-95 text-white shadow-md shadow-olive/10 font-serif"
                 }`}
               >
                 {isAnalyzing ? (
@@ -685,12 +685,12 @@ export default function App() {
             </div>
 
             {/* Quick Experience Simulator Panel (Human-centric helper) */}
-            <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm space-y-4">
+            <div className="card bg-white/85 p-5 shadow-sm space-y-4">
               <div>
-                <h4 className="font-display font-bold text-slate-800 text-xs uppercase tracking-wide">
+                <h4 className="font-display font-bold text-slate-800 text-xs uppercase tracking-wide font-serif">
                   模擬インプット・シミュレーター
                 </h4>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-slate-500">
                   動作確認用のポルトガル語入力サンプルをロードして、AIのレスポンス（日本語への食品名正規化、PFC算出）を確認できます。
                 </p>
               </div>
@@ -698,40 +698,40 @@ export default function App() {
               <div className="grid grid-cols-1 gap-2.5">
                 <button
                   onClick={() => loadExampleData("padaria")}
-                  className="w-full text-left bg-slate-50/50 hover:bg-emerald-50/30 border border-slate-200 rounded-2xl p-3 flex items-center gap-3 transition"
+                  className="w-full text-left bg-white/70 hover:bg-sage/15 border border-sage/10 rounded-2xl p-3 flex items-center gap-3 transition cursor-pointer"
                 >
                   <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 shrink-0 text-xs">
                     🍞
                   </div>
                   <div className="flex-1 min-w-0 font-sans text-xs">
                     <div className="font-semibold text-slate-700">🥖 朝食：パン屋（Padaria）レシート</div>
-                    <div className="text-[10px] text-slate-400 truncate">pão francês (フランスパン), café (コーヒー)...</div>
+                    <div className="text-[10px] text-slate-500 truncate">pão francês (フランスパン), café (コーヒー)...</div>
                   </div>
                 </button>
 
                 <button
                   onClick={() => loadExampleData("dinner")}
-                  className="w-full text-left bg-slate-50/50 hover:bg-emerald-50/30 border border-slate-200 rounded-2xl p-3 flex items-center gap-3 transition"
+                  className="w-full text-left bg-white/70 hover:bg-sage/15 border border-sage/10 rounded-2xl p-3 flex items-center gap-3 transition cursor-pointer"
                 >
                   <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 text-xs">
                     🥩
                   </div>
                   <div className="flex-1 min-w-0 font-sans text-xs">
                     <div className="font-semibold text-slate-700">🥗 夕食：サーモンステーキと温野菜</div>
-                    <div className="text-[10px] text-slate-400 truncate">filé de salmão (サケのソテー) などの写真...</div>
+                    <div className="text-[10px] text-slate-500 truncate">filé de salmão (サケのソテー) などの写真...</div>
                   </div>
                 </button>
 
                 <button
                   onClick={() => loadExampleData("voice")}
-                  className="w-full text-left bg-slate-50/50 hover:bg-emerald-50/30 border border-slate-200 rounded-2xl p-3 flex items-center gap-3 transition"
+                  className="w-full text-left bg-white/70 hover:bg-sage/15 border border-sage/10 rounded-2xl p-3 flex items-center gap-3 transition cursor-pointer"
                 >
                   <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 shrink-0 text-xs">
                     🎙️
                   </div>
                   <div className="flex-1 min-w-0 font-sans text-xs">
                     <div className="font-semibold text-slate-700">🎤 ボイス：ポルトガル語音声入力</div>
-                    <div className="text-[10px] text-slate-400 truncate">pão de queijo (ポンデケージョ) やお昼ご飯の話...</div>
+                    <div className="text-[10px] text-slate-500 truncate">pão de queijo (ポンデケージョ) やお昼ご飯の話...</div>
                   </div>
                 </button>
               </div>
@@ -768,11 +768,11 @@ export default function App() {
       </main>
 
       {/* Aesthetic Footer status bar */}
-      <footer className="bg-white border-t border-slate-100 text-center py-6 mt-12 text-xs text-slate-400 font-sans">
-        <p className="font-medium text-slate-500">
+      <footer className="bg-white/85 border-t border-sage/20 text-center py-6 mt-12 text-xs text-slate-500 font-sans">
+        <p className="font-medium text-[#4A453F] font-serif">
           NutriGasto AI — ポルトガル語レシート ＆ 栄養PFC自動管理アシスタント
         </p>
-        <p className="text-[10px] mt-1 text-slate-400">
+        <p className="text-[10px] mt-1 text-slate-500">
           Built securely on Google AI Studio Server-side Gemini API
         </p>
       </footer>

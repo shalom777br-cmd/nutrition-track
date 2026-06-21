@@ -19,7 +19,7 @@ export default function RecommendationCard({ feedback, isAnalyzing }: Recommenda
         const itemContent = trimmed.substring(1).trim().replace(/\*\*(.*?)\*\*/g, "$1");
         return (
           <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-600 leading-relaxed my-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+            <span className="w-1.5 h-1.5 rounded-full bg-clay mt-1.5 shrink-0" />
             <span>{itemContent}</span>
           </li>
         );
@@ -30,7 +30,7 @@ export default function RecommendationCard({ feedback, isAnalyzing }: Recommenda
       if (stepMatch) {
         return (
           <div key={idx} className="flex gap-2 text-xs text-slate-600 leading-relaxed my-1 pl-1">
-            <span className="font-mono font-bold text-emerald-600 shrink-0">{stepMatch[1]}.</span>
+            <span className="font-mono font-bold text-clay-text shrink-0">{stepMatch[1]}.</span>
             <span>{stepMatch[2].replace(/\*\*(.*?)\*\*/g, "$1")}</span>
           </div>
         );
@@ -56,22 +56,22 @@ export default function RecommendationCard({ feedback, isAnalyzing }: Recommenda
   };
 
   return (
-    <div className="bg-gradient-to-br from-emerald-50/50 to-teal-50/20 rounded-2xl border border-emerald-100/60 p-5 shadow-sm relative overflow-hidden">
+    <div className="card bg-white/85 p-5 shadow-sm relative overflow-hidden">
       {/* Decorative accent background ring */}
-      <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-emerald-200/10 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-sage/10 rounded-full blur-2xl pointer-events-none" />
 
       <div className="flex items-start gap-3.5">
         {/* Advisor Avatar Icon */}
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shrink-0 shadow-md shadow-emerald-500/10">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-olive to-sage flex items-center justify-center text-white shrink-0 shadow-md shadow-olive/10">
           <HeartPulse className="w-5 h-5" />
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h4 className="font-display font-bold text-slate-800 text-sm tracking-tight">
+            <h4 className="font-display font-bold text-slate-800 text-sm tracking-tight font-serif">
               AI 健康アドバイザー
             </h4>
-            <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 bg-olive/10 text-olive text-[10px] font-semibold px-2 py-0.5 rounded-full">
               <Sparkles className="w-3 h-3" />
               NutriGasto AI
             </span>
@@ -83,7 +83,7 @@ export default function RecommendationCard({ feedback, isAnalyzing }: Recommenda
           {isAnalyzing ? (
             <div className="py-4 space-y-2.5">
               <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                <div className="w-4 h-4 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-olive/30 border-t-olive rounded-full animate-spin" />
                 食事と栄養素を分析して、アドバイスを生成中...
               </div>
               <div className="h-3 w-3/4 bg-slate-100 rounded animate-pulse" />

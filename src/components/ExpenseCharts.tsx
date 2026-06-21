@@ -44,15 +44,14 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white/95 backdrop-blur-sm p-3 border border-slate-200 rounded-xl shadow-lg font-sans text-xs">
-          <p className="font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
-            <CalendarDays className="w-3.5 h-3.5 text-slate-500" />
+        <div className="card bg-white/95 backdrop-blur-sm p-3 shadow-lg font-sans text-xs">
+          <p className="font-semibold text-slate-700 mb-1.5 flex items-center gap-1 font-serif">
+            <CalendarDays className="w-3.5 h-3.5 text-olive" />
             {label} の食事
           </p>
           <div className="space-y-1">
             {payload.map((entry: any, index: number) => {
               const isCost = entry.name.includes("費用");
-              const isCalories = entry.name.includes("摂取カロリー");
               return (
                 <p
                   key={index}
@@ -76,10 +75,10 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+    <div className="card bg-white/85 p-5 shadow-sm">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h3 className="font-display text-lg font-bold text-slate-800">
+          <h3 className="font-display text-lg font-bold text-slate-800 font-serif">
             食費 ＆ 栄養摂取レポート
           </h3>
           <p className="text-xs text-slate-500">
@@ -88,13 +87,13 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
         </div>
 
         {/* Chart View Toggle Controls */}
-        <div className="flex bg-slate-50 border border-slate-100 p-1 rounded-xl w-full sm:w-auto">
+        <div className="flex bg-sage/10 border border-sage/5 p-1 rounded-xl w-full sm:w-auto">
           <button
             onClick={() => setActiveTab("both")}
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               activeTab === "both"
-                ? "bg-emerald-500 text-white shadow-sm"
-                : "text-slate-600 hover:bg-slate-100"
+                ? "bg-white text-olive shadow-xs font-bold"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
@@ -102,10 +101,10 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
           </button>
           <button
             onClick={() => setActiveTab("expense")}
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               activeTab === "expense"
-                ? "bg-emerald-500 text-white shadow-sm"
-                : "text-slate-600 hover:bg-slate-100"
+                ? "bg-white text-olive shadow-xs font-bold"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             <Coins className="w-3.5 h-3.5" />
@@ -113,10 +112,10 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
           </button>
           <button
             onClick={() => setActiveTab("calories")}
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               activeTab === "calories"
-                ? "bg-emerald-500 text-white shadow-sm"
-                : "text-slate-600 hover:bg-slate-100"
+                ? "bg-white text-olive shadow-xs font-bold relative"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
@@ -139,7 +138,7 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
                 <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="expense" name="食費費用 (R$)" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" name="食費費用 (R$)" fill="#6B705C" radius={[4, 4, 0, 0]} />
               </BarChart>
             ) : activeTab === "calories" ? (
               <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
@@ -151,14 +150,14 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
                   type="monotone"
                   dataKey="calories"
                   name="摂取カロリー"
-                  stroke="#3b82f6"
-                  fillOpacity={0.1}
+                  stroke="#CB997E"
+                  fillOpacity={0.15}
                   fill="url(#colorCaloriesOnly)"
                 />
                 <defs>
                   <linearGradient id="colorCaloriesOnly" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                    <stop offset="5%" stopColor="#CB997E" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#CB997E" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
               </AreaChart>
@@ -167,14 +166,14 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
               <AreaChart data={chartData} margin={{ top: 10, right: 5, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis yAxisId="left" stroke="#10b981" fontSize={11} tickLine={false} />
-                <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" fontSize={11} tickLine={false} />
+                <YAxis yAxisId="left" stroke="#6B705C" fontSize={11} tickLine={false} />
+                <YAxis yAxisId="right" orientation="right" stroke="#CB997E" fontSize={11} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend iconSize={10} wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
                 <defs>
                   <linearGradient id="colorCalories" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.01} />
+                    <stop offset="5%" stopColor="#CB997E" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#CB997E" stopOpacity={0.01} />
                   </linearGradient>
                 </defs>
                 <Area
@@ -182,7 +181,7 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
                   type="monotone"
                   dataKey="calories"
                   name="摂取カロリー (kcal)"
-                  stroke="#3b82f6"
+                  stroke="#CB997E"
                   strokeWidth={2}
                   fill="url(#colorCalories)"
                 />
@@ -191,7 +190,7 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
                   type="linear"
                   dataKey="expense"
                   name="食費費用 (R$)"
-                  stroke="#10b981"
+                  stroke="#6B705C"
                   strokeWidth={2.5}
                   fill="none"
                 />
