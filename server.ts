@@ -1,0 +1,218 @@
+import express from "express";
+import path from "path";
+import { createServer as createViteServer } from "vite";
+import { GoogleGenAI, Type } from "@google/genai";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const app = express();
+const PORT = 3000;
+
+// Increase payload limit for base64 images and audio files
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+// Helper to extract mimeType and base64 string from data URL
+function parseBase64Data(dataUrl: string) {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (match) {
+    return {
+      mimeType: match[1],
+      data: match[2],
+    };
+  }
+  // Fallback if it is already raw base64 (e.g. if parsed or sent without header)
+  return null;
+}
+
+// Lazy initialization of Gemini client to fail gracefully
+let aiClient: GoogleGenAI | null = null;
+function getGeminiClient() {
+  if (!aiClient) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) {
+      console.warn("WARNING: GEMINI_API_KEY is not defined in the environment.");
+    }
+    aiClient = new GoogleGenAI({
+      apiKey: key || "MOCK_KEY_FOR_BUILD",
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+  }
+  return aiClient;
+}
+
+// API endpoint for analyzing receipt, food image, audio, or text
+app.post("/api/analyze", async (req, res) => {
+  try {
+    const { text, receiptImage, foodImage, audio, audioMimeType } = req.body;
+
+    const parts: any[] = [];
+
+    // 1. Add guidelines text prompt
+    parts.push({
+      text: `You are an expert OCR receipt parser, nutritional scientist, and health advisor.
+Your goals are:
+1. Parse the Portuguese receipt food items and their prices (in BRL/local currency) if provided.
+2. Extract visible food items, meals, or food packaging from any plate food photo if provided.
+3. Transcribe and extract food items described in the Portuguese, Japanese, or English voice audio or text if provided.
+4. For EACH food/grocery item identified:
+   - "originalName": Raw Portuguese or other language item name (e.g., 'pão francês', 'frango grelhado').
+   - "japaneseName": A normalized, standardized, clean Japanese description mapping to standard food databases (e.g., 'パン（小麦）', '鶏肉（グリル塩焼き）').
+   - "source": Identify which modal input it came from. MUST be one of: 'receipt', 'image', 'voice', or 'text'.
+   - "price": The exact bill price (BRL or local) if extracted, or a realistic price estimate in BRL if it's on a shopping list, or 0 if it is a general plate meal photo with no specified purchase history.
+   - "quantity": Parsed quantity/amount of item (e.g., '1 unit', '300g', '200ml').
+   - "nutrition": Calculate energy (calories in kcal), macronutrients PFC (protein, fat, carbohydrates in grams), key vitamins (vitaminA in μg RAE, vitaminB1 in mg, vitaminB2 in mg, vitaminB6 in mg, vitaminB12 in μg, vitaminC in mg, vitaminD in μg, vitaminE in mg), minerals (iron in mg, calcium in mg, zinc in mg), and dietary fiber in grams (fiber) using standard nutritional tables (USDA, Open Food Facts, Taco / Brazilian food database). Estimate realistic values for the given quantity.
+
+Additional user instruction:
+Please provide a comprehensive friendly health advisory feedback (advisorFeedback) in Japanese summarizing the nutrition of the overall meal list, identifying potential deficiency or surplus based on standard adult recommendations, and giving supportive health advice.`
+    });
+
+    if (text) {
+      parts.push({ text: `User written text/notes: ${text}` });
+    }
+
+    if (receiptImage) {
+      const parsed = parseBase64Data(receiptImage);
+      if (parsed) {
+        parts.push({
+          inlineData: {
+            mimeType: parsed.mimeType,
+            data: parsed.data
+          }
+        });
+        parts.push({ text: "The image above is a portuguese store receipt/invoice of grocery or restaurant foods." });
+      }
+    }
+
+    if (foodImage) {
+      const parsed = parseBase64Data(foodImage);
+      if (parsed) {
+        parts.push({
+          inlineData: {
+            mimeType: parsed.mimeType,
+            data: parsed.data
+          }
+        });
+        parts.push({ text: "The image above is a photo of a meal plate or specific food items." });
+      }
+    }
+
+    if (audio) {
+      const parsed = parseBase64Data(audio) || { data: audio, mimeType: audioMimeType || "audio/webm" };
+      parts.push({
+        inlineData: {
+          mimeType: parsed.mimeType,
+          data: parsed.data
+        }
+      });
+      parts.push({ text: "The audio memo contains the user describing what they ate today in Portuguese, Japanese, or English. Please transcribe and parse." });
+    }
+
+    if (parts.length <= 1) {
+      return res.status(400).json({ error: "Please provide at least one input (text, receipt photo, plate photo, or voice memo)." });
+    }
+
+    const ai = getGeminiClient();
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({
+        error: "GEMINI_API_KEY is missing on the server. Please add your Gemini API Key in the Secrets panel."
+      });
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: { parts: parts },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            items: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  originalName: { type: Type.STRING, description: "Detailed item name in original language as detected on receipt or prompt (e.g., 'pão francês', 'frango grelhado')" },
+                  japaneseName: { type: Type.STRING, description: "Normalized healthy Japanese name representation (e.g. 'パン（小麦）', '鶏肉（グリル）')" },
+                  source: { type: Type.STRING, description: "Input source of the food item. MUST be one of: 'receipt', 'image', 'voice', or 'text'" },
+                  price: { type: Type.NUMBER, description: "Extracted or estimated cost in local billing currency (e.g. BRL on receipt). Default is 0." },
+                  quantity: { type: Type.STRING, description: "Estimated or extracted quantity/portion size (e.g., '1個', '200g', '1人前')" },
+                  nutrition: {
+                    type: Type.OBJECT,
+                    properties: {
+                      calories: { type: Type.NUMBER, description: "Energy in calories (kcal)" },
+                      protein: { type: Type.NUMBER, description: "Protein content in grams (g)" },
+                      fat: { type: Type.NUMBER, description: "Fat content in grams (g)" },
+                      carbohydrates: { type: Type.NUMBER, description: "Carbohydrates in grams (g)" },
+                      vitaminA: { type: Type.NUMBER, description: "Vitamin A in mcg (RAE)" },
+                      vitaminB1: { type: Type.NUMBER, description: "Vitamin B1 in mg" },
+                      vitaminB2: { type: Type.NUMBER, description: "Vitamin B2 in mg" },
+                      vitaminB6: { type: Type.NUMBER, description: "Vitamin B6 in mg" },
+                      vitaminB12: { type: Type.NUMBER, description: "Vitamin B12 in mcg" },
+                      vitaminC: { type: Type.NUMBER, description: "Vitamin C in mg" },
+                      vitaminD: { type: Type.NUMBER, description: "Vitamin D in mcg" },
+                      vitaminE: { type: Type.NUMBER, description: "Vitamin E in mg" },
+                      iron: { type: Type.NUMBER, description: "Iron content in mg" },
+                      calcium: { type: Type.NUMBER, description: "Calcium content in mg" },
+                      zinc: { type: Type.NUMBER, description: "Zinc content in mg" },
+                      fiber: { type: Type.NUMBER, description: "Dietary fiber content in grams (g)" }
+                    },
+                    required: [
+                      "calories", "protein", "fat", "carbohydrates",
+                      "vitaminA", "vitaminB1", "vitaminB2", "vitaminB6", "vitaminB12",
+                      "vitaminC", "vitaminD", "vitaminE",
+                      "iron", "calcium", "zinc", "fiber"
+                    ]
+                  }
+                },
+                required: ["originalName", "japaneseName", "source", "price", "quantity", "nutrition"]
+              }
+            },
+            advisorFeedback: { type: Type.STRING, description: "Helpful, detailed, inspiring advisory comments in Japanese summarizing the user's nutritional status and suggesting healthy choices." }
+          },
+          required: ["items", "advisorFeedback"]
+        }
+      }
+    });
+
+    const jsonStr = response.text;
+    if (!jsonStr) {
+      throw new Error("Empty response received from Gemini model.");
+    }
+
+    const payload = JSON.parse(jsonStr.trim());
+    return res.json(payload);
+
+  } catch (error: any) {
+    console.error("AI Analysis Error:", error);
+    return res.status(500).json({ error: error.message || "Failed to process the request using Gemini AI." });
+  }
+});
+
+// Setup Vite middleware or Static files for React UI
+async function startServer() {
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+startServer();
