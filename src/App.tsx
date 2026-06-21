@@ -361,46 +361,19 @@ export default function App() {
             </div>
           </div>
 
-          {/* Quick Date Control Grid */}
-          <div className="flex items-center gap-3.5 flex-wrap w-full md:w-auto">
-            <div className="flex items-center gap-2 bg-white/70 border border-sage/20 p-1.5 rounded-xl w-full sm:w-auto justify-between sm:justify-start shadow-xs">
-              <span className="text-xs font-semibold text-slate-500 pl-2">対象日：</span>
-              <select
-                value={activeDate}
-                onChange={(e) => {
-                  setActiveDate(e.target.value);
-                  setApiError(null);
-                }}
-                className="bg-white border border-slate-200 rounded-lg text-xs font-bold px-3 py-1.5 text-slate-700 outline-none focus:border-olive"
-              >
-                <option value="2026-06-21">2026/06/21 (本日)</option>
-                <option value="2026-06-20">2026/06/20 (昨日)</option>
-                <option value="2026-06-19">2026/06/19 (一昨日)</option>
-                <option value="2026-06-18">2026/06/18</option>
-                <option value="2026-06-17">2026/06/17</option>
-                <option value="2026-06-16">2026/06/16</option>
-              </select>
-            </div>
 
-            <button
-              onClick={handleResetDefaults}
-              className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 font-medium text-xs bg-white hover:bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 transition duration-150 shrink-0 cursor-pointer"
-              title="データをデフォルトにリセット"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              リセット
-            </button>
-          </div>
         </div>
       </header>
 
       {/* Main Container Layout */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8 space-y-8">
+        
+
+        {/* TOP PANEL: AI ANALYSIS CONSOLE & OPTIONAL SIMULATORS */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           
-          {/* LEFT PANEL: INPUT FORM & SIMULATOR WIDGET (grid level: 5/12) */}
-          <section className="lg:col-span-5 space-y-6">
-            
+          {/* TOP LEFT: AI Multimodal Input Console */}
+          <section className="lg:col-span-7 space-y-6">
             {/* Analyzer Console Card */}
             <div className="card bg-white/85 p-6 shadow-sm space-y-5">
               <div>
@@ -684,6 +657,15 @@ export default function App() {
               </button>
             </div>
 
+            <DailyStats
+              currentLog={currentLog}
+              logs={logs}
+              date={activeDate}
+            />
+          </section>
+
+          {/* TOP RIGHT: Simulator / Helper Controls */}
+          <section className="lg:col-span-5 space-y-6">
             {/* Quick Experience Simulator Panel (Human-centric helper) */}
             <div className="card bg-white/85 p-5 shadow-sm space-y-4">
               <div>
@@ -718,7 +700,7 @@ export default function App() {
                   </div>
                   <div className="flex-1 min-w-0 font-sans text-xs">
                     <div className="font-semibold text-slate-700">🥗 夕食：サーモンステーキと温野菜</div>
-                    <div className="text-[10px] text-slate-500 truncate">filé de salmão (サケのソテー) などの写真...</div>
+                    <div className="text-[10px] text-slate-500 truncate">filé de salmão (サケ of ソテー) などの写真...</div>
                   </div>
                 </button>
 
@@ -736,32 +718,29 @@ export default function App() {
                 </button>
               </div>
             </div>
-
           </section>
 
-          {/* RIGHT PANEL: ANALYTICS, CHART REPORTS & ITEM LIST (grid level: 7/12) */}
-          <section className="lg:col-span-7 space-y-6">
-            
-            {/* AI Advisor Response & Deficiency warnings first */}
+        </div>
+
+        {/* Section Divider */}
+        <hr className="border-sage/20 my-2" />
+
+        {/* BOTTOM PANEL: DASHBOARD STATISTICS & RESULTS */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+          
+          {/* LEFT DASHBOARD COLUMN: Advisor feedback & Nutrient/Cost targets */}
+          <section className="lg:col-span-6 space-y-6">
             <RecommendationCard feedback={advisorFeedback} isAnalyzing={isAnalyzing} />
+          </section>
 
-            {/* General Target & Expense stats (Daily or Monthly average 1/30) */}
-            <DailyStats
-              currentLog={currentLog}
-              logs={logs}
-              date={activeDate}
-            />
-
-            {/* Food items breakdown list with expandables, delete, quick manual-add */}
+          {/* RIGHT DASHBOARD COLUMN: Registered foods list & dynamic charts */}
+          <section className="lg:col-span-6 space-y-6">
             <PortionList
               items={currentLog ? currentLog.items : []}
               onAddItem={handleAddManualFood}
               onDeleteItem={handleDeleteFood}
             />
-
-            {/* Daily/Weekly Recharts expenses graph */}
             <ExpenseCharts logs={logs} />
-
           </section>
 
         </div>
