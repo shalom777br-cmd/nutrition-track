@@ -13,17 +13,50 @@ const PORT = 3000;
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// Helper to extract mimeType and base64 string from data URL
+// Helper to extract mimeType and base64 string from data URL safely
 function parseBase64Data(dataUrl: string) {
-  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-  if (match) {
-    return {
-      mimeType: match[1],
-      data: match[2],
-    };
+  if (typeof dataUrl !== "string" || !dataUrl.trim()) return null;
+  
+  let mimeType = "application/octet-stream";
+  let rawData = "";
+
+  if (dataUrl.startsWith("data:")) {
+    const commaIndex = dataUrl.indexOf(",");
+    if (commaIndex !== -1) {
+      const header = dataUrl.substring(0, commaIndex);
+      rawData = dataUrl.substring(commaIndex + 1).trim();
+      const mimeMatch = header.match(/^data:([^;]+)/);
+      mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+    } else {
+      return null;
+    }
+  } else {
+    const trimmed = dataUrl.trim();
+    // Exclude plain HTTP links, mock placeholders, or uninitialized string representations
+    if (
+      trimmed.startsWith("http://") || 
+      trimmed.startsWith("https://") || 
+      trimmed === "undefined" || 
+      trimmed === "null" ||
+      trimmed === ""
+    ) {
+      return null;
+    }
+    rawData = trimmed;
   }
-  // Fallback if it is already raw base64 (e.g. if parsed or sent without header)
-  return null;
+
+  // Sanitize rawData to verify it only contains base64 characters (and remove spaces/newlines if any)
+  const sanitized = rawData.replace(/[^A-Za-z0-9+/=]/g, "");
+  
+  // If base64 content is empty (e.g. "data:image/jpeg;base64," with 0-byte content) or invalid, return null
+  if (!sanitized || sanitized.length === 0) {
+    return null;
+  }
+
+  return {
+    mimeType,
+    data: sanitized
+  };
 }
 
 // Lazy initialization of Gemini client to fail gracefully
@@ -49,7 +82,7 @@ function getGeminiClient() {
 // API endpoint for analyzing receipt, food image, audio, or text
 app.post("/api/analyze", async (req, res) => {
   try {
-    const { text, receiptImage, foodImage, audio, audioMimeType } = req.body;
+    const { text, receiptImage, foodImage, foodImages, audio, audioMimeType } = req.body;
 
     const parts: any[] = [];
 
@@ -89,7 +122,20 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
       }
     }
 
-    if (foodImage) {
+    if (Array.isArray(foodImages) && foodImages.length > 0) {
+      foodImages.forEach((imgBase64, idx) => {
+        const parsed = parseBase64Data(imgBase64);
+        if (parsed) {
+          parts.push({
+            inlineData: {
+              mimeType: parsed.mimeType,
+              data: parsed.data
+            }
+          });
+          parts.push({ text: `The image above (Image #${idx + 1}) is a photo of a meal plate or specific food items.` });
+        }
+      });
+    } else if (foodImage) {
       const parsed = parseBase64Data(foodImage);
       if (parsed) {
         parts.push({
@@ -103,14 +149,16 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
     }
 
     if (audio) {
-      const parsed = parseBase64Data(audio) || { data: audio, mimeType: audioMimeType || "audio/webm" };
-      parts.push({
-        inlineData: {
-          mimeType: parsed.mimeType,
-          data: parsed.data
-        }
-      });
-      parts.push({ text: "The audio memo contains the user describing what they ate today in Portuguese, Japanese, or English. Please transcribe and parse." });
+      const parsed = parseBase64Data(audio);
+      if (parsed) {
+        parts.push({
+          inlineData: {
+            mimeType: parsed.mimeType && parsed.mimeType !== "application/octet-stream" ? parsed.mimeType : (audioMimeType || "audio/webm"),
+            data: parsed.data
+          }
+        });
+        parts.push({ text: "The audio memo contains the user describing what they ate today in Portuguese, Japanese, or English. Please transcribe and parse." });
+      }
     }
 
     if (parts.length <= 1) {
@@ -185,12 +233,25 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
       throw new Error("Empty response received from Gemini model.");
     }
 
-    const payload = JSON.parse(jsonStr.trim());
+    let cleaned = jsonStr.trim();
+    if (cleaned.startsWith("```")) {
+      cleaned = cleaned.replace(/^```(?:json)?\n?/i, "");
+      cleaned = cleaned.replace(/\n?```$/, "");
+      cleaned = cleaned.trim();
+    }
+
+    const payload = JSON.parse(cleaned);
     return res.json(payload);
 
   } catch (error: any) {
-    console.error("AI Analysis Error:", error);
-    return res.status(500).json({ error: error.message || "Failed to process the request using Gemini AI." });
+    console.error("AI Analysis Error - Full details:", error);
+    if (error && error.stack) {
+      console.error("AI Analysis Error Stack:", error.stack);
+    }
+    return res.status(500).json({ 
+      error: error.message || "Failed to process the request using Gemini AI.",
+      stack: error.stack || "" 
+    });
   }
 });
 

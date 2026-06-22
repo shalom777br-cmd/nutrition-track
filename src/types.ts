@@ -28,6 +28,7 @@ export interface FoodItem {
   price: number;          // Estimated/detected price (0 if not verified/free)
   quantity: string;       // Quantity text (e.g., "1 unit", "200g")
   nutrition: NutritionalMetrics;
+  multiplier?: number;    // Multiplier for quantity/portions (default to 1)
 }
 
 export interface AnalysisResponse {

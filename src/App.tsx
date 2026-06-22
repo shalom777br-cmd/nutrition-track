@@ -33,12 +33,31 @@ export default function App() {
   const [activeDate, setActiveDate] = useState<string>("2026-06-21"); // Current date based on metadata
 
   // --- Input Panel State ---
-  const [activeTab, setActiveTab] = useState<"text" | "receipt" | "image" | "voice">("text");
-  const [inputText, setInputText] = useState("");
+  const [activeTab, setActiveTab] = useState<"text" | "receipt" | "image" | "voice">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("nutrigasto_active_tab") as any) || "text";
+    }
+    return "text";
+  });
+  const [inputText, setInputText] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("nutrigasto_draft_text") || "";
+    }
+    return "";
+  });
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
-  const [foodFile, setFoodFile] = useState<File | null>(null);
-  const [foodPreview, setFoodPreview] = useState<string | null>(null);
+  const [foodFiles, setFoodFiles] = useState<File[]>([]);
+  const [foodPreviews, setFoodPreviews] = useState<string[]>([]);
+
+  // Sync draft states to localStorage
+  useEffect(() => {
+    localStorage.setItem("nutrigasto_active_tab", activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem("nutrigasto_draft_text", inputText);
+  }, [inputText]);
 
   // --- Voice Memo State ---
   const [audioState, setAudioState] = useState<"idle" | "recording" | "playback_ready">("idle");
@@ -54,7 +73,7 @@ export default function App() {
 
   // Initialize and load from LocalStorage
   useEffect(() => {
-    const stored = localStorage.getItem("nutrigasto_logs_v1");
+    const stored = localStorage.getItem("nutrigasto_logs_v2");
     if (stored) {
       try {
         setLogs(JSON.parse(stored));
@@ -62,19 +81,19 @@ export default function App() {
         console.error("Failed to parse local storage, loading defaults", e);
         const initial = getInitialLogs();
         setLogs(initial);
-        localStorage.setItem("nutrigasto_logs_v1", JSON.stringify(initial));
+        localStorage.setItem("nutrigasto_logs_v2", JSON.stringify(initial));
       }
     } else {
       const initial = getInitialLogs();
       setLogs(initial);
-      localStorage.setItem("nutrigasto_logs_v1", JSON.stringify(initial));
+      localStorage.setItem("nutrigasto_logs_v2", JSON.stringify(initial));
     }
   }, []);
 
   // Save changes to localStorage helper
   const saveLogs = (updatedLogs: DailyLog[]) => {
     setLogs(updatedLogs);
-    localStorage.setItem("nutrigasto_logs_v1", JSON.stringify(updatedLogs));
+    localStorage.setItem("nutrigasto_logs_v2", JSON.stringify(updatedLogs));
   };
 
   const currentLog = logs.find((l) => l.date === activeDate) || null;
@@ -147,11 +166,25 @@ export default function App() {
     setApiError(null);
   };
 
-  const handleFoodChange = (file: File) => {
-    setFoodFile(file);
-    const url = URL.createObjectURL(file);
-    setFoodPreview(url);
+  const handleFoodChangeMultiple = (files: FileList) => {
+    const fileArray = Array.from(files);
+    setFoodFiles((prev) => [...prev, ...fileArray]);
+    const urlArray = fileArray.map((file) => URL.createObjectURL(file));
+    setFoodPreviews((prev) => [...prev, ...urlArray]);
     setApiError(null);
+  };
+
+  const handleRemoveFoodImage = (index: number) => {
+    setFoodFiles((prev) => prev.filter((_, idx) => idx !== index));
+    setFoodPreviews((prev) => {
+      const removedUrl = prev[index];
+      try {
+        URL.revokeObjectURL(removedUrl);
+      } catch (e) {
+        console.warn(e);
+      }
+      return prev.filter((_, idx) => idx !== index);
+    });
   };
 
   // --- Perform actual AI Analysis calling our full stack backend ---
@@ -161,15 +194,17 @@ export default function App() {
 
     try {
       let receiptBase64 = "";
-      let foodBase64 = "";
+      let foodImagesBase64: string[] = [];
       let audioBase64 = "";
       let audioMime = "";
 
       if (receiptFile) {
         receiptBase64 = await fileToBase64(receiptFile);
       }
-      if (foodFile) {
-        foodBase64 = await fileToBase64(foodFile);
+      if (foodFiles.length > 0) {
+        foodImagesBase64 = await Promise.all(
+          foodFiles.map((file) => fileToBase64(file))
+        );
       }
       if (audioBlob) {
         audioBase64 = await fileToBase64(audioBlob);
@@ -177,7 +212,7 @@ export default function App() {
       }
 
       // Payload must contain at least one valid input
-      if (!inputText.trim() && !receiptBase64 && !foodBase64 && !audioBase64) {
+      if (!inputText.trim() && !receiptBase64 && foodImagesBase64.length === 0 && !audioBase64) {
         throw new Error("いずれかの入力を提供してください（テキスト入力、レシート、食事の写真、または音声メモ）。");
       }
 
@@ -187,7 +222,7 @@ export default function App() {
         body: JSON.stringify({
           text: inputText,
           receiptImage: receiptBase64,
-          foodImage: foodBase64,
+          foodImages: foodImagesBase64,
           audio: audioBase64,
           audioMimeType: audioMime,
         }),
@@ -196,6 +231,9 @@ export default function App() {
       const payload = await response.json();
 
       if (!response.ok) {
+        if (payload.stack) {
+          console.error("Server-side error stack trace:", payload.stack);
+        }
         throw new Error(payload.error || "Gemini AIの分析処理に失敗しました。");
       }
 
@@ -217,7 +255,7 @@ export default function App() {
             items: [...originalList, ...analyzedItems],
             totalCost: updatedLogs[existingIdx].totalCost + analyzedItems.reduce((s, i) => s + (i.price || 0), 0),
             hasReceipt: updatedLogs[existingIdx].hasReceipt || !!receiptFile,
-            hasFoodPhoto: updatedLogs[existingIdx].hasFoodPhoto || !!foodFile,
+            hasFoodPhoto: updatedLogs[existingIdx].hasFoodPhoto || foodFiles.length > 0,
             hasVoiceMemo: updatedLogs[existingIdx].hasVoiceMemo || !!audioBlob,
           };
         } else {
@@ -227,7 +265,7 @@ export default function App() {
             items: analyzedItems,
             totalCost: analyzedItems.reduce((s, i) => s + (i.price || 0), 0),
             hasReceipt: !!receiptFile,
-            hasFoodPhoto: !!foodFile,
+            hasFoodPhoto: foodFiles.length > 0,
             hasVoiceMemo: !!audioBlob,
           });
         }
@@ -239,15 +277,18 @@ export default function App() {
         setInputText("");
         setReceiptFile(null);
         setReceiptPreview(null);
-        setFoodFile(null);
-        setFoodPreview(null);
+        setFoodFiles([]);
+        setFoodPreviews([]);
         resetRecording();
       } else {
         setAdvisorFeedback(payload.advisorFeedback || "食品項目が検出されませんでした。より具体的なテキストや高解像度の画像を試してください。");
       }
 
     } catch (err: any) {
-      console.error("Analysis failure:", err);
+      console.error("Analysis failure - Full details:", err);
+      if (err.stack) {
+        console.error("Analysis failure client stack:", err.stack);
+      }
       setApiError(err.message || "予期せぬエラーが発生しました。");
     } finally {
       setIsAnalyzing(false);
@@ -262,11 +303,35 @@ export default function App() {
         return {
           ...log,
           items: filtered,
-          totalCost: filtered.reduce((acc, curr) => acc + (curr.price || 0), 0),
+          totalCost: filtered.reduce((acc, curr) => acc + (curr.price || 0) * (typeof curr.multiplier === "number" ? curr.multiplier : 1), 0),
         };
       }
       return log;
     }).filter((log) => log.items.length > 0); // remove empty days if needed, or keep them
+    saveLogs(updated);
+  };
+
+  // --- Handler: Update Individual Food Item Multiplier ---
+  const handleUpdateFoodMultiplier = (itemId: string, multiplier: number) => {
+    const updated = logs.map((log) => {
+      if (log.date === activeDate) {
+        const updatedItems = log.items.map((item) => {
+          if (item.id === itemId) {
+            return {
+              ...item,
+              multiplier: Math.max(0.1, parseFloat(multiplier.toFixed(2))),
+            };
+          }
+          return item;
+        });
+        return {
+          ...log,
+          items: updatedItems,
+          totalCost: updatedItems.reduce((acc, curr) => acc + (curr.price || 0) * (typeof curr.multiplier === "number" ? curr.multiplier : 1), 0),
+        };
+      }
+      return log;
+    });
     saveLogs(updated);
   };
 
@@ -282,17 +347,18 @@ export default function App() {
 
     if (existingIdx >= 0) {
       const original = updated[existingIdx].items;
+      const updatedItems = [...original, newItem];
       updated[existingIdx] = {
         ...updated[existingIdx],
-        items: [...original, newItem],
-        totalCost: updated[existingIdx].totalCost + (newItem.price || 0),
+        items: updatedItems,
+        totalCost: updatedItems.reduce((acc, curr) => acc + (curr.price || 0) * (typeof curr.multiplier === "number" ? curr.multiplier : 1), 0),
       };
     } else {
       updated.push({
         id: `log-${Date.now()}`,
         date: activeDate,
         items: [newItem],
-        totalCost: newItem.price || 0,
+        totalCost: (newItem.price || 0) * (typeof newItem.multiplier === "number" ? newItem.multiplier : 1),
         hasReceipt: newItem.source === "receipt",
         hasFoodPhoto: newItem.source === "image",
         hasVoiceMemo: false,
@@ -313,8 +379,8 @@ export default function App() {
     } else if (type === "dinner") {
       setActiveTab("image");
       setInputText("健康のために付け合わせの蒸しブロッコリーを大盛りにしたサケのソテー、夕食メニューです。");
-      setFoodPreview("https://placehold.co/500x400/f8fafc/10b981?text=Salmon+Grehalo+Photo");
-      setFoodFile(new File([], "plate_jantar.jpg", { type: "image/jpeg" }));
+      setFoodPreviews(["https://placehold.co/500x400/f8fafc/10b981?text=Salmon+Grehalo+Photo"]);
+      setFoodFiles([new File([], "plate_jantar.jpg", { type: "image/jpeg" })]);
     } else {
       setActiveTab("voice");
       setInputText("Hoje eu comi um pão de queijo com café e um filé de frango grelhado com feijão no almoço.");
@@ -330,7 +396,7 @@ export default function App() {
     if (window.confirm("これまでの記録をリセットし、初期サンプル食事ログを再読み込みしますか？")) {
       const initial = getInitialLogs();
       setLogs(initial);
-      localStorage.setItem("nutrigasto_logs_v1", JSON.stringify(initial));
+      localStorage.setItem("nutrigasto_logs_v2", JSON.stringify(initial));
       setAdvisorFeedback("");
       setApiError(null);
     }
@@ -375,12 +441,12 @@ export default function App() {
           {/* TOP LEFT: AI Multimodal Input Console */}
           <section className="lg:col-span-7 space-y-6">
             {/* Analyzer Console Card */}
-            <div className="card bg-white/85 p-6 shadow-sm space-y-5">
+            <div className="card bg-white/85 p-4 shadow-sm space-y-3">
               <div>
-                <h2 className="font-display text-lg font-bold text-slate-800 font-serif">
+                <h2 className="font-display text-base font-bold text-slate-800 font-serif">
                   AIマルチモーダル解析入力
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-[11px] text-slate-500 leading-tight">
                   食品の情報が含まれる素材をアップロード・録音してください
                 </p>
               </div>
@@ -389,61 +455,61 @@ export default function App() {
               <div className="grid grid-cols-4 p-1 bg-sage/10 rounded-xl border border-sage/5">
                 <button
                   onClick={() => setActiveTab("text")}
-                  className={`flex flex-col items-center gap-1.5 py-2.5 text-[10px] font-bold rounded-lg transition cursor-pointer ${
+                  className={`flex flex-col items-center gap-1 py-1.5 text-[10px] font-bold rounded-lg transition cursor-pointer ${
                     activeTab === "text"
                       ? "bg-white text-olive shadow-xs"
                       : "text-[#6B705C] hover:text-slate-800"
                   }`}
                 >
-                  <FileText className="w-4.5 h-4.5" />
+                  <FileText className="w-4 h-4" />
                   メモ
                 </button>
                 <button
                   onClick={() => setActiveTab("receipt")}
-                  className={`flex flex-col items-center gap-1.5 py-2.5 text-[10px] font-bold rounded-lg transition flex-wrap shrink-0 cursor-pointer ${
+                  className={`flex flex-col items-center gap-1 py-1.5 text-[10px] font-bold rounded-lg transition flex-wrap shrink-0 cursor-pointer ${
                     activeTab === "receipt"
                       ? "bg-white text-olive shadow-xs"
                       : "text-[#6B705C] hover:text-slate-800"
                   }`}
                 >
-                  <Upload className="w-4.5 h-4.5" />
+                  <Upload className="w-4 h-4" />
                   レシート
                 </button>
                 <button
                   onClick={() => setActiveTab("image")}
-                  className={`flex flex-col items-center gap-1.5 py-2.5 text-[10px] font-bold rounded-lg transition cursor-pointer ${
+                  className={`flex flex-col items-center gap-1 py-1.5 text-[10px] font-bold rounded-lg transition cursor-pointer ${
                     activeTab === "image"
                       ? "bg-white text-olive shadow-xs"
                       : "text-[#6B705C] hover:text-slate-800"
                   }`}
                 >
-                  <Camera className="w-4.5 h-4.5" />
+                  <Camera className="w-4 h-4" />
                   料理写真
                 </button>
                 <button
                   onClick={() => setActiveTab("voice")}
-                  className={`flex flex-col items-center gap-1.5 py-2.5 text-[10px] font-bold rounded-lg transition cursor-pointer ${
+                  className={`flex flex-col items-center gap-1 py-1.5 text-[10px] font-bold rounded-lg transition cursor-pointer ${
                     activeTab === "voice"
                       ? "bg-white text-olive shadow-xs"
                       : "text-[#6B705C] hover:text-slate-800"
                   }`}
                 >
-                  <Mic className="w-4.5 h-4.5" />
+                  <Mic className="w-4 h-4" />
                   音声メモ
                 </button>
               </div>
 
               {/* Input Panes */}
-              <div className="min-h-[140px] flex flex-col justify-center">
+              <div className="min-h-[90px] flex flex-col justify-center">
                 
                 {/* 1. TEXT MEMO PANEL */}
                 {activeTab === "text" && (
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     <textarea
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
-                      placeholder="食べたもののテキストを自由に入力してください。例：マクドナルドでビッグマック1個とポテトMサイズを食べた、または frango grelhado (鶏胸グリル) と arroz (米) を200gずつ食べた"
-                      className="w-full h-32 text-xs border border-sage/30 focus:border-olive focus:ring-0 p-3 outline-none rounded-xl bg-white/55 placeholder:text-slate-450 leading-relaxed"
+                      placeholder="食べたもののテキストを自由に入力してください。例：マクドナルドでビッグマック1個とポテトMサイズを食べた"
+                      className="w-full h-18 text-xs border border-sage/30 focus:border-olive focus:ring-0 p-2 outline-none rounded-xl bg-white/55 placeholder:text-slate-450 leading-relaxed"
                     />
                   </div>
                 )}
@@ -454,7 +520,7 @@ export default function App() {
                     <p className="text-[11px] text-slate-500 leading-normal">
                       ポルトガル語の買い出しレシート、レストランの請求書をスキャンします。金額と食品名を標準化し自動読み込みします。
                     </p>
-
+ 
                     {receiptPreview ? (
                       <div className="relative border border-slate-100 rounded-2xl overflow-hidden bg-slate-50">
                         {receiptPreview.includes("placehold.co") ? (
@@ -494,47 +560,62 @@ export default function App() {
                     )}
                   </div>
                 )}
-
+ 
                 {/* 3. MEAL IMAGE PANEL */}
                 {activeTab === "image" && (
                   <div className="space-y-4">
                     <p className="text-[11px] text-slate-500 leading-normal">
-                      お皿に乗った食事やスナックの写真を撮影・アップロードしてください。AIが三大栄養素・ビタミン等を推定分析します。
+                      お食事やスナックの写真を撮影・アップロードしてください（複数選択して一括アップロード可能）。AIが三大栄養素・ビタミン等を推定分析します。
                     </p>
-
-                    {foodPreview ? (
-                      <div className="relative border border-slate-100 rounded-2xl overflow-hidden bg-slate-50">
-                        {foodPreview.includes("placehold.co") ? (
-                          <div className="p-4 text-center text-xs font-semibold text-teal-600 bg-teal-50/20 py-10">
-                            {foodPreview.split("text=")[1] ? decodeURIComponent(foodPreview.split("text=")[1].replace(/\+/g, " ")) : "食事プレビュー"}
+ 
+                    {foodPreviews.length > 0 && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border border-slate-100 p-3 rounded-2xl bg-slate-50/50">
+                        {foodPreviews.map((preview, index) => (
+                          <div key={index} className="relative aspect-video sm:aspect-square border border-slate-200 rounded-xl overflow-hidden bg-white group shadow-xs">
+                            <img
+                              src={preview}
+                              alt={`Meal preview ${index + 1}`}
+                              className="w-full h-full object-cover p-1 rounded-xl"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFoodImage(index)}
+                              className="absolute top-1 right-1 p-1 rounded-full bg-slate-900/60 hover:bg-slate-900/80 text-white transition bubble-shadow"
+                              title="削除"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="absolute bottom-1 left-1.5 text-[9px] bg-slate-950/55 px-1.5 py-0.5 rounded-md text-white font-mono font-bold font-serif">
+                              #{index + 1}
+                            </span>
                           </div>
-                        ) : (
-                          <img
-                            src={foodPreview}
-                            alt="Food preview"
-                            className="w-full max-h-[160px] object-contain mx-auto p-2"
+                        ))}
+ 
+                        {/* Add more placeholder in the grid */}
+                        <label className="flex flex-col items-center justify-center border border-dashed border-sage/40 rounded-xl hover:bg-sage/10 aspect-video sm:aspect-square cursor-pointer transition p-2">
+                          <Plus className="w-5 h-5 text-slate-400 mb-1" />
+                          <span className="text-[10px] font-semibold text-[#4A453F]">追加する</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => e.target.files && handleFoodChangeMultiple(e.target.files)}
+                            className="hidden"
                           />
-                        )}
-                        <button
-                          onClick={() => {
-                            setFoodFile(null);
-                            setFoodPreview(null);
-                          }}
-                          className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/60 hover:bg-slate-900/80 text-white transition"
-                          title="画像を削除"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        </label>
                       </div>
-                    ) : (
+                    )}
+ 
+                    {foodPreviews.length === 0 && (
                       <label className="flex flex-col items-center justify-center border border-dashed border-sage/40 rounded-2xl hover:bg-sage/10 p-6 cursor-pointer transition">
-                        <Camera className="w-8 h-8 text-slate-400 mb-2.5" />
+                        <Camera className="w-8 h-8 text-slate-400 mb-2.5 animate-bounce" />
                         <span className="text-xs font-semibold text-[#4A453F]">お食事の写真をアップロード</span>
-                        <span className="text-[10px] text-slate-450 mt-1">または直接カメラ撮影</span>
+                        <span className="text-[10px] text-slate-450 mt-1">複数選択・カメラ一括撮影対応</span>
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => e.target.files?.[0] && handleFoodChange(e.target.files[0])}
+                          multiple
+                          onChange={(e) => e.target.files && handleFoodChangeMultiple(e.target.files)}
                           className="hidden"
                         />
                       </label>
@@ -662,6 +743,12 @@ export default function App() {
               logs={logs}
               date={activeDate}
             />
+            <PortionList
+              items={currentLog ? currentLog.items : []}
+              onAddItem={handleAddManualFood}
+              onDeleteItem={handleDeleteFood}
+              onUpdateMultiplier={handleUpdateFoodMultiplier}
+            />
           </section>
 
           {/* TOP RIGHT: Simulator / Helper Controls */}
@@ -735,11 +822,6 @@ export default function App() {
 
           {/* RIGHT DASHBOARD COLUMN: Registered foods list & dynamic charts */}
           <section className="lg:col-span-6 space-y-6">
-            <PortionList
-              items={currentLog ? currentLog.items : []}
-              onAddItem={handleAddManualFood}
-              onDeleteItem={handleDeleteFood}
-            />
             <ExpenseCharts logs={logs} />
           </section>
 

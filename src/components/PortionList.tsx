@@ -7,9 +7,10 @@ interface PortionListProps {
   items: FoodItem[];
   onAddItem: (item: Omit<FoodItem, "id">) => void;
   onDeleteItem: (id: string) => void;
+  onUpdateMultiplier: (id: string, multiplier: number) => void;
 }
 
-export default function PortionList({ items, onAddItem, onDeleteItem }: PortionListProps) {
+export default function PortionList({ items, onAddItem, onDeleteItem, onUpdateMultiplier }: PortionListProps) {
   // Expanded item state to reveal full nutrition details per ingredient
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
@@ -102,23 +103,23 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
   };
 
   return (
-    <div className="card bg-white/85 p-5 shadow-sm space-y-5">
-      <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+    <div className="card bg-white/85 p-4 shadow-sm space-y-4">
+      <div className="flex justify-between items-center pb-2.5 border-b border-slate-100">
         <div>
-          <h3 className="font-display text-lg font-bold text-slate-800 flex items-center gap-2 font-serif">
-            <UtensilsCrossed className="w-5 h-5 text-olive" />
+          <h3 className="font-display text-sm font-bold text-slate-800 flex items-center gap-1.5 font-serif">
+            <UtensilsCrossed className="w-4 h-4 text-olive animate-pulse" />
             食品リスト ＆ 内訳表示
           </h3>
-          <p className="text-xs text-slate-500">
+          <p className="text-[10px] text-slate-500">
             スキャンされた商品の言語正規化と成分詳細
           </p>
         </div>
 
         <button
           onClick={() => setIsAddingManual(!isAddingManual)}
-          className="flex items-center gap-1 bg-sage/15 hover:bg-sage/25 border border-sage/10 text-olive text-xs font-semibold px-3 py-1.5 rounded-xl transition cursor-pointer"
+          className="flex items-center gap-1 bg-sage/15 hover:bg-sage/25 border border-sage/10 text-olive text-[10px] font-bold px-2.5 py-1 rounded-lg transition cursor-pointer"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           手動追加
         </button>
       </div>
@@ -294,7 +295,7 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
         </div>
       ) : (
         <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
-          {items.map((item) => {
+          {[...items].reverse().map((item) => {
             const isExpanded = expandedItemId === item.id;
             return (
               <div
@@ -304,7 +305,7 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
                 {/* Header/Collapsible row */}
                 <div
                   onClick={() => toggleExpand(item.id)}
-                  className="flex items-center justify-between p-3.5 cursor-pointer select-none"
+                  className="flex items-center justify-between p-3.5 cursor-pointer select-none animate-fadeIn"
                 >
                   <div className="flex-1 min-w-0 pr-4">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -325,14 +326,60 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
                       </span>
                       {item.price > 0 && (
                         <span className="text-clay-text text-xs font-semibold">
-                          R$ {item.price.toFixed(2)}
-                          <span className="text-[9px] text-slate-400 font-normal ml-0.5">({Math.round(item.price * 28)}円相当)</span>
+                          R$ {((item.price || 0) * (item.multiplier !== undefined ? item.multiplier : 1)).toFixed(2)}
+                          <span className="text-[9px] text-slate-400 font-normal ml-0.5">
+                            ({Math.round((item.price || 0) * (item.multiplier !== undefined ? item.multiplier : 1) * 28)}円相当
+                            {item.multiplier !== undefined && item.multiplier !== 1 && ` / 基底 R$ ${item.price.toFixed(2)}`})
+                          </span>
                         </span>
                       )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
+                    {/* Quantity Edit Stepper */}
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center bg-white border border-slate-200/85 shadow-sm rounded-lg p-0.5 mr-1"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentVal = item.multiplier !== undefined ? item.multiplier : 1;
+                          onUpdateMultiplier(item.id, Math.max(0.1, currentVal - 0.5));
+                        }}
+                        className="w-5 h-5 flex items-center justify-center text-xs font-bold text-slate-500 hover:bg-slate-150 rounded-md transition"
+                        title="個数を0.5減らす"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        value={item.multiplier !== undefined ? item.multiplier : 1}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) {
+                            onUpdateMultiplier(item.id, val);
+                          }
+                        }}
+                        className="w-10 text-center font-mono font-bold text-xs text-slate-800 focus:outline-none bg-transparent p-0 border-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentVal = item.multiplier !== undefined ? item.multiplier : 1;
+                          onUpdateMultiplier(item.id, currentVal + 0.5);
+                        }}
+                        className="w-5 h-5 flex items-center justify-center text-xs font-bold text-slate-500 hover:bg-slate-150 rounded-md transition"
+                        title="個数を0.5増やす"
+                      >
+                        +
+                      </button>
+                      <span className="text-[10px] text-slate-450 pr-1.5 pl-0.5 font-semibold">倍</span>
+                    </div>
+
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -359,30 +406,46 @@ export default function PortionList({ items, onAddItem, onDeleteItem }: PortionL
                     <div className="grid grid-cols-4 gap-2 text-center">
                       <div className="bg-slate-50/50 rounded-lg p-2 border border-slate-100">
                         <span className="text-[9px] font-bold text-slate-400 block uppercase">カロリー</span>
-                        <span className="text-xs font-extrabold text-slate-800">{item.nutrition.calories} kcal</span>
+                        <span className="text-xs font-extrabold text-slate-800">
+                          {parseFloat(((item.nutrition.calories || 0) * (item.multiplier !== undefined ? item.multiplier : 1)).toFixed(1))} kcal
+                        </span>
                       </div>
                       <div className="bg-orange-50/10 rounded-lg p-2 border border-clay/10">
                         <span className="text-[9px] font-bold text-clay-text block uppercase">たんぱく質</span>
-                        <span className="text-xs font-extrabold text-clay">{item.nutrition.protein} g</span>
+                        <span className="text-xs font-extrabold text-clay">
+                          {parseFloat(((item.nutrition.protein || 0) * (item.multiplier !== undefined ? item.multiplier : 1)).toFixed(1))} g
+                        </span>
                       </div>
                       <div className="bg-amber-50/10 rounded-lg p-2 border border-clay-text/10">
                         <span className="text-[9px] font-bold text-clay block uppercase">脂質</span>
-                        <span className="text-xs font-extrabold text-clay-text">{item.nutrition.fat} g</span>
+                        <span className="text-xs font-extrabold text-clay-text">
+                          {parseFloat(((item.nutrition.fat || 0) * (item.multiplier !== undefined ? item.multiplier : 1)).toFixed(1))} g
+                        </span>
                       </div>
                       <div className="bg-teal-50/10 rounded-lg p-2 border border-sage/10">
                         <span className="text-[9px] font-bold text-olive block uppercase">炭水化物</span>
-                        <span className="text-xs font-extrabold text-olive">{item.nutrition.carbohydrates} g</span>
+                        <span className="text-xs font-extrabold text-olive">
+                          {parseFloat(((item.nutrition.carbohydrates || 0) * (item.multiplier !== undefined ? item.multiplier : 1)).toFixed(1))} g
+                        </span>
                       </div>
                     </div>
 
                     {/* Detailed vitamins / minerals inside the item */}
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 block mb-2 uppercase tracking-wide">含有ビタミン・ミネラル内訳</span>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wide">含有ビタミン・ミネラル内訳</span>
+                        {item.multiplier !== undefined && item.multiplier !== 1 && (
+                          <span className="text-[9px] text-[#4A453F] bg-sage/20 px-1.5 py-0.5 rounded font-bold font-mono">
+                            合計分量換算済 ({item.multiplier}倍)
+                          </span>
+                        )}
+                      </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 bg-slate-50/40 p-2.5 rounded-lg">
                         {Object.keys(item.nutrition)
                           .filter((k) => !["calories", "protein", "fat", "carbohydrates"].includes(k))
                           .map((nKey) => {
-                            const value = (item.nutrition as any)[nKey] || 0;
+                            const rawValue = (item.nutrition as any)[nKey] || 0;
+                            const value = parseFloat((rawValue * (item.multiplier !== undefined ? item.multiplier : 1)).toFixed(2));
                             const label = NUTRIENT_LABELS[nKey as keyof NutritionalMetrics];
                             const unit = NUTRIENT_UNITS[nKey as keyof NutritionalMetrics];
                             return (

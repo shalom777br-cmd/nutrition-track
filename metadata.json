@@ -1,7 +1,7 @@
 {
   "name": "Food Expense & Nutrition Tracker",
   "description": "Calculate and track food expenses and detailed nutrient totals (PFC, vitamins, minerals, fiber) from Portuguese receipts, food images, voice, or text inputs using Gemini AI.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["camera", "microphone"],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]

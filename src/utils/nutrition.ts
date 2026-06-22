@@ -25,22 +25,23 @@ export function createEmptyNutritionalMetrics(): NutritionalMetrics {
 export function calculateTotalNutrition(items: FoodItem[]): NutritionalMetrics {
   const totals = createEmptyNutritionalMetrics();
   items.forEach((item) => {
-    totals.calories += item.nutrition.calories || 0;
-    totals.protein += item.nutrition.protein || 0;
-    totals.fat += item.nutrition.fat || 0;
-    totals.carbohydrates += item.nutrition.carbohydrates || 0;
-    totals.vitaminA += item.nutrition.vitaminA || 0;
-    totals.vitaminB1 += item.nutrition.vitaminB1 || 0;
-    totals.vitaminB2 += item.nutrition.vitaminB2 || 0;
-    totals.vitaminB6 += item.nutrition.vitaminB6 || 0;
-    totals.vitaminB12 += item.nutrition.vitaminB12 || 0;
-    totals.vitaminC += item.nutrition.vitaminC || 0;
-    totals.vitaminD += item.nutrition.vitaminD || 0;
-    totals.vitaminE += item.nutrition.vitaminE || 0;
-    totals.iron += item.nutrition.iron || 0;
-    totals.calcium += item.nutrition.calcium || 0;
-    totals.zinc += item.nutrition.zinc || 0;
-    totals.fiber += item.nutrition.fiber || 0;
+    const m = typeof item.multiplier === "number" ? item.multiplier : 1;
+    totals.calories += (item.nutrition.calories || 0) * m;
+    totals.protein += (item.nutrition.protein || 0) * m;
+    totals.fat += (item.nutrition.fat || 0) * m;
+    totals.carbohydrates += (item.nutrition.carbohydrates || 0) * m;
+    totals.vitaminA += (item.nutrition.vitaminA || 0) * m;
+    totals.vitaminB1 += (item.nutrition.vitaminB1 || 0) * m;
+    totals.vitaminB2 += (item.nutrition.vitaminB2 || 0) * m;
+    totals.vitaminB6 += (item.nutrition.vitaminB6 || 0) * m;
+    totals.vitaminB12 += (item.nutrition.vitaminB12 || 0) * m;
+    totals.vitaminC += (item.nutrition.vitaminC || 0) * m;
+    totals.vitaminD += (item.nutrition.vitaminD || 0) * m;
+    totals.vitaminE += (item.nutrition.vitaminE || 0) * m;
+    totals.iron += (item.nutrition.iron || 0) * m;
+    totals.calcium += (item.nutrition.calcium || 0) * m;
+    totals.zinc += (item.nutrition.zinc || 0) * m;
+    totals.fiber += (item.nutrition.fiber || 0) * m;
   });
 
   // Round values for display clarity
@@ -58,7 +59,7 @@ export function getInitialLogs(): DailyLog[] {
     {
       id: "log-1",
       date: "2026-06-17",
-      totalCost: 32.50,
+      totalCost: 0,
       hasReceipt: true,
       hasFoodPhoto: false,
       hasVoiceMemo: false,
@@ -68,7 +69,7 @@ export function getInitialLogs(): DailyLog[] {
           originalName: "Pão francês (2 unidades) com manteiga",
           japaneseName: "フランスパン（バター付き・2個）",
           source: "receipt",
-          price: 4.50,
+          price: 0,
           quantity: "2個",
           nutrition: {
             calories: 340,
@@ -94,7 +95,7 @@ export function getInitialLogs(): DailyLog[] {
           originalName: "Café expresso",
           japaneseName: "エスプレッソコーヒー",
           source: "receipt",
-          price: 4.00,
+          price: 0,
           quantity: "1杯",
           nutrition: {
             calories: 5,
@@ -120,7 +121,7 @@ export function getInitialLogs(): DailyLog[] {
           originalName: "Prato Feito: Arroz, feijão e frango grelhado",
           japaneseName: "ブラジルご飯プレート：米、フェイジョン、鶏肉グリル",
           source: "receipt",
-          price: 24.00,
+          price: 0,
           quantity: "1人前",
           nutrition: {
             calories: 680,
@@ -146,7 +147,7 @@ export function getInitialLogs(): DailyLog[] {
     {
       id: "log-2",
       date: "2026-06-18",
-      totalCost: 38.00,
+      totalCost: 0,
       hasReceipt: false,
       hasFoodPhoto: true,
       hasVoiceMemo: false,
@@ -182,7 +183,7 @@ export function getInitialLogs(): DailyLog[] {
           originalName: "Salada de frutas com granola",
           japaneseName: "フルーツサラダ（グラノーラ添え）",
           source: "image",
-          price: 12.00,
+          price: 0,
           quantity: "1カップ",
           nutrition: {
             calories: 240,
@@ -208,7 +209,7 @@ export function getInitialLogs(): DailyLog[] {
           originalName: "Bife acebolado com arroz e purê de batata",
           japaneseName: "牛赤身肉ステーキ（玉ねぎソース、米、ポテトピュレ）",
           source: "text",
-          price: 26.00,
+          price: 0,
           quantity: "1人前",
           nutrition: {
             calories: 720,
@@ -234,7 +235,7 @@ export function getInitialLogs(): DailyLog[] {
     {
       id: "log-3",
       date: "2026-06-19",
-      totalCost: 59.00,
+      totalCost: 0,
       hasReceipt: true,
       hasFoodPhoto: true,
       hasVoiceMemo: true,
@@ -244,7 +245,7 @@ export function getInitialLogs(): DailyLog[] {
           originalName: "Mamão Papaia (metade)",
           japaneseName: "パパイヤ（ハーフ）",
           source: "image",
-          price: 4.00,
+          price: 0,
           quantity: "半玉",
           nutrition: {
             calories: 60,
@@ -270,7 +271,7 @@ export function getInitialLogs(): DailyLog[] {
           originalName: "Açaí na tigela com banana e xarope de guaraná",
           japaneseName: "アサイーボウル（バナナ・ガラナシロップ）",
           source: "voice",
-          price: 15.00,
+          price: 0,
           quantity: "大鉢一杯",
           nutrition: {
             calories: 380,
@@ -296,7 +297,7 @@ export function getInitialLogs(): DailyLog[] {
           originalName: "Feijoada tradicional com couve refogada e laranja",
           japaneseName: "フェイジョアーダ（ケール炒め＆オレンジ添え）",
           source: "receipt",
-          price: 40.00,
+          price: 0,
           quantity: "1.5人前",
           nutrition: {
             calories: 950,
@@ -322,7 +323,7 @@ export function getInitialLogs(): DailyLog[] {
     {
       id: "log-4",
       date: "2026-06-20",
-      totalCost: 26.50,
+      totalCost: 0,
       hasReceipt: false,
       hasFoodPhoto: false,
       hasVoiceMemo: true,
@@ -332,7 +333,7 @@ export function getInitialLogs(): DailyLog[] {
           originalName: "Pão de queijo (5 unidades)",
           japaneseName: "ポンデケージョ（5個）",
           source: "voice",
-          price: 8.50,
+          price: 0,
           quantity: "5個",
           nutrition: {
             calories: 390,
@@ -358,7 +359,7 @@ export function getInitialLogs(): DailyLog[] {
           originalName: "Filé de salmão grelhado com brocolis ao vapor",
           japaneseName: "鮭のグリルと蒸しブロッコリー",
           source: "text",
-          price: 18.00,
+          price: 0,
           quantity: "1人前",
           nutrition: {
             calories: 450,
