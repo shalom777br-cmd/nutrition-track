@@ -45,22 +45,30 @@ function parseBase64Data(dataUrl: string) {
     rawData = trimmed;
   }
 
-  // Sanitize rawData to verify it only contains base64 characters (and remove spaces/newlines if any)
-  let sanitized = rawData.replace(/[^A-Za-z0-9+/=]/g, "");
-  
-  // If base64 content is empty or invalid, return null
-  if (!sanitized || sanitized.length === 0) {
-    return null;
-  }
+  // 1. Support Web Safe / Base64URL characters '-' and '_' by replacing them with '+' and '/'
+  let standardBase64 = rawData.replace(/-/g, "+").replace(/_/g, "/");
 
-  // Handle missing padding (=) defensively. A valid base64 stream length must be a multiple of 4.
-  const mod = sanitized.length % 4;
+  // 2. Remove all non-base64 characters (keep A-Z, a-z, 0-9, +, /, and =)
+  let sanitized = standardBase64.replace(/[^A-Za-z0-9+/=]/g, "");
+
+  // 3. Remove any existing trailing '=' padding to normalize and calculate correct padding
+  let unpadded = sanitized.replace(/=+$/, "");
+
+  // 4. Properly check length and pad with '=' up to a multiple of 4
+  const mod = unpadded.length % 4;
   if (mod === 2) {
-    sanitized += "==";
+    sanitized = unpadded + "==";
   } else if (mod === 3) {
-    sanitized += "=";
+    sanitized = unpadded + "=";
   } else if (mod === 1) {
     // 1 residual character is invalid in base64. Return null or ignore.
+    return null;
+  } else {
+    sanitized = unpadded;
+  }
+
+  // If base64 content is empty or invalid, return null
+  if (!sanitized || sanitized.length === 0) {
     return null;
   }
 
