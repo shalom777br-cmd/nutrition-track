@@ -46,10 +46,21 @@ function parseBase64Data(dataUrl: string) {
   }
 
   // Sanitize rawData to verify it only contains base64 characters (and remove spaces/newlines if any)
-  const sanitized = rawData.replace(/[^A-Za-z0-9+/=]/g, "");
+  let sanitized = rawData.replace(/[^A-Za-z0-9+/=]/g, "");
   
-  // If base64 content is empty (e.g. "data:image/jpeg;base64," with 0-byte content) or invalid, return null
+  // If base64 content is empty or invalid, return null
   if (!sanitized || sanitized.length === 0) {
+    return null;
+  }
+
+  // Handle missing padding (=) defensively. A valid base64 stream length must be a multiple of 4.
+  const mod = sanitized.length % 4;
+  if (mod === 2) {
+    sanitized += "==";
+  } else if (mod === 3) {
+    sanitized += "=";
+  } else if (mod === 1) {
+    // 1 residual character is invalid in base64. Return null or ignore.
     return null;
   }
 
@@ -173,7 +184,7 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-flash-latest",
       contents: { parts: parts },
       config: {
         responseMimeType: "application/json",
