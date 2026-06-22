@@ -204,61 +204,91 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
       });
     }
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: { parts: parts },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            items: {
-              type: Type.ARRAY,
-              items: {
+    // Helper function to retry content generation with exponential backoff
+    const generateContentWithRetry = async (aiClient: GoogleGenAI, maxRetries = 3, initialDelay = 1000) => {
+      let attempt = 0;
+      while (true) {
+        try {
+          return await aiClient.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: { parts: parts },
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: {
                 type: Type.OBJECT,
                 properties: {
-                  originalName: { type: Type.STRING, description: "Detailed item name in original language as detected on receipt or prompt (e.g., 'pão francês', 'frango grelhado')" },
-                  japaneseName: { type: Type.STRING, description: "Normalized healthy Japanese name representation (e.g. 'パン（小麦）', '鶏肉（グリル）')" },
-                  source: { type: Type.STRING, description: "Input source of the food item. MUST be one of: 'receipt', 'image', 'voice', or 'text'" },
-                  price: { type: Type.NUMBER, description: "Extracted or estimated cost in local billing currency (e.g. BRL on receipt). Default is 0." },
-                  quantity: { type: Type.STRING, description: "Estimated or extracted quantity/portion size (e.g., '1個', '200g', '1人前')" },
-                  nutrition: {
-                    type: Type.OBJECT,
-                    properties: {
-                      calories: { type: Type.NUMBER, description: "Energy in calories (kcal)" },
-                      protein: { type: Type.NUMBER, description: "Protein content in grams (g)" },
-                      fat: { type: Type.NUMBER, description: "Fat content in grams (g)" },
-                      carbohydrates: { type: Type.NUMBER, description: "Carbohydrates in grams (g)" },
-                      vitaminA: { type: Type.NUMBER, description: "Vitamin A in mcg (RAE)" },
-                      vitaminB1: { type: Type.NUMBER, description: "Vitamin B1 in mg" },
-                      vitaminB2: { type: Type.NUMBER, description: "Vitamin B2 in mg" },
-                      vitaminB6: { type: Type.NUMBER, description: "Vitamin B6 in mg" },
-                      vitaminB12: { type: Type.NUMBER, description: "Vitamin B12 in mcg" },
-                      vitaminC: { type: Type.NUMBER, description: "Vitamin C in mg" },
-                      vitaminD: { type: Type.NUMBER, description: "Vitamin D in mcg" },
-                      vitaminE: { type: Type.NUMBER, description: "Vitamin E in mg" },
-                      iron: { type: Type.NUMBER, description: "Iron content in mg" },
-                      calcium: { type: Type.NUMBER, description: "Calcium content in mg" },
-                      zinc: { type: Type.NUMBER, description: "Zinc content in mg" },
-                      fiber: { type: Type.NUMBER, description: "Dietary fiber content in grams (g)" }
-                    },
-                    required: [
-                      "calories", "protein", "fat", "carbohydrates",
-                      "vitaminA", "vitaminB1", "vitaminB2", "vitaminB6", "vitaminB12",
-                      "vitaminC", "vitaminD", "vitaminE",
-                      "iron", "calcium", "zinc", "fiber"
-                    ]
-                  }
+                  items: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        originalName: { type: Type.STRING, description: "Detailed item name in original language as detected on receipt or prompt (e.g., 'pão francês', 'frango grelhado')" },
+                        japaneseName: { type: Type.STRING, description: "Normalized healthy Japanese name representation (e.g. 'パン（小麦）', '鶏肉（グリル）')" },
+                        source: { type: Type.STRING, description: "Input source of the food item. MUST be one of: 'receipt', 'image', 'voice', or 'text'" },
+                        price: { type: Type.NUMBER, description: "Extracted or estimated cost in local billing currency (e.g. BRL on receipt). Default is 0." },
+                        quantity: { type: Type.STRING, description: "Estimated or extracted quantity/portion size (e.g., '1個', '200g', '1人前')" },
+                        nutrition: {
+                          type: Type.OBJECT,
+                          properties: {
+                            calories: { type: Type.NUMBER, description: "Energy in calories (kcal)" },
+                            protein: { type: Type.NUMBER, description: "Protein content in grams (g)" },
+                            fat: { type: Type.NUMBER, description: "Fat content in grams (g)" },
+                            carbohydrates: { type: Type.NUMBER, description: "Carbohydrates in grams (g)" },
+                            vitaminA: { type: Type.NUMBER, description: "Vitamin A in mcg (RAE)" },
+                            vitaminB1: { type: Type.NUMBER, description: "Vitamin B1 in mg" },
+                            vitaminB2: { type: Type.NUMBER, description: "Vitamin B2 in mg" },
+                            vitaminB6: { type: Type.NUMBER, description: "Vitamin B6 in mg" },
+                            vitaminB12: { type: Type.NUMBER, description: "Vitamin B12 in mcg" },
+                            vitaminC: { type: Type.NUMBER, description: "Vitamin C in mg" },
+                            vitaminD: { type: Type.NUMBER, description: "Vitamin D in mcg" },
+                            vitaminE: { type: Type.NUMBER, description: "Vitamin E in mg" },
+                            iron: { type: Type.NUMBER, description: "Iron content in mg" },
+                            calcium: { type: Type.NUMBER, description: "Calcium content in mg" },
+                            zinc: { type: Type.NUMBER, description: "Zinc content in mg" },
+                            fiber: { type: Type.NUMBER, description: "Dietary fiber content in grams (g)" }
+                          },
+                          required: [
+                            "calories", "protein", "fat", "carbohydrates",
+                            "vitaminA", "vitaminB1", "vitaminB2", "vitaminB6", "vitaminB12",
+                            "vitaminC", "vitaminD", "vitaminE",
+                            "iron", "calcium", "zinc", "fiber"
+                          ]
+                        }
+                      },
+                      required: ["originalName", "japaneseName", "source", "price", "quantity", "nutrition"]
+                    }
+                  },
+                  advisorFeedback: { type: Type.STRING, description: "Helpful, detailed, inspiring advisory comments in Japanese summarizing the user's nutritional status and suggesting healthy choices." }
                 },
-                required: ["originalName", "japaneseName", "source", "price", "quantity", "nutrition"]
+                required: ["items", "advisorFeedback"]
               }
-            },
-            advisorFeedback: { type: Type.STRING, description: "Helpful, detailed, inspiring advisory comments in Japanese summarizing the user's nutritional status and suggesting healthy choices." }
-          },
-          required: ["items", "advisorFeedback"]
+            }
+          });
+        } catch (err: any) {
+          attempt++;
+          const errStr = JSON.stringify(err) || err?.message || "";
+          const isRetryable = 
+            errStr.includes("503") || 
+            errStr.includes("429") || 
+            errStr.includes("UNAVAILABLE") || 
+            errStr.includes("high demand") ||
+            err?.status === 503 || 
+            err?.status === 429 ||
+            err?.code === 503 ||
+            err?.code === 429;
+
+          if (isRetryable && attempt < maxRetries) {
+            const delay = initialDelay * Math.pow(2, attempt - 1);
+            console.warn(`Gemini API returned retryable error (attempt ${attempt}/${maxRetries}). Retrying in ${delay}ms...`, err);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            continue;
+          }
+          throw err;
         }
       }
-    });
+    };
+
+    const response = await generateContentWithRetry(ai);
 
     const jsonStr = response.text;
     if (!jsonStr) {
