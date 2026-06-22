@@ -45,8 +45,8 @@ export default function App() {
     }
     return "";
   });
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
+  const [receiptPreviews, setReceiptPreviews] = useState<string[]>([]);
   const [foodFiles, setFoodFiles] = useState<File[]>([]);
   const [foodPreviews, setFoodPreviews] = useState<string[]>([]);
 
@@ -105,6 +105,69 @@ export default function App() {
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = (error) => reject(error);
+    });
+  };
+
+  // Helper to compress images on the client side to prevent payload too large (413) errors
+  const compressImage = (file: File | Blob, maxWidth = 1280, maxHeight = 1280, quality = 0.8): Promise<Blob | File> => {
+    return new Promise((resolve) => {
+      if (!file.type || !file.type.startsWith("image/")) {
+        resolve(file);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(file);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                resolve(blob);
+              } else {
+                resolve(file);
+              }
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = () => {
+          resolve(file);
+        };
+      };
+      reader.onerror = () => {
+        resolve(file);
+      };
     });
   };
 
@@ -176,11 +239,25 @@ export default function App() {
   };
 
   // --- Handlers: File selection previews ---
-  const handleReceiptChange = (file: File) => {
-    setReceiptFile(file);
-    const url = URL.createObjectURL(file);
-    setReceiptPreview(url);
+  const handleReceiptChangeMultiple = (files: FileList) => {
+    const fileArray = Array.from(files);
+    setReceiptFiles((prev) => [...prev, ...fileArray]);
+    const urlArray = fileArray.map((file) => URL.createObjectURL(file));
+    setReceiptPreviews((prev) => [...prev, ...urlArray]);
     setApiError(null);
+  };
+
+  const handleRemoveReceiptImage = (index: number) => {
+    setReceiptFiles((prev) => prev.filter((_, idx) => idx !== index));
+    setReceiptPreviews((prev) => {
+      const removedUrl = prev[index];
+      try {
+        URL.revokeObjectURL(removedUrl);
+      } catch (e) {
+        console.warn(e);
+      }
+      return prev.filter((_, idx) => idx !== index);
+    });
   };
 
   const handleFoodChangeMultiple = (files: FileList) => {
@@ -210,17 +287,25 @@ export default function App() {
     setApiError(null);
 
     try {
-      let receiptBase64 = "";
+      let receiptImagesBase64: string[] = [];
       let foodImagesBase64: string[] = [];
       let audioBase64 = "";
       let audioMime = "";
 
-      if (receiptFile) {
-        receiptBase64 = await fileToBase64(receiptFile);
+      if (receiptFiles.length > 0) {
+        receiptImagesBase64 = await Promise.all(
+          receiptFiles.map(async (file) => {
+            const compressed = await compressImage(file);
+            return fileToBase64(compressed);
+          })
+        );
       }
       if (foodFiles.length > 0) {
         foodImagesBase64 = await Promise.all(
-          foodFiles.map((file) => fileToBase64(file))
+          foodFiles.map(async (file) => {
+            const compressed = await compressImage(file);
+            return fileToBase64(compressed);
+          })
         );
       }
       if (audioBlob) {
@@ -229,7 +314,7 @@ export default function App() {
       }
 
       // Payload must contain at least one valid input
-      if (!inputText.trim() && !receiptBase64 && foodImagesBase64.length === 0 && !audioBase64) {
+      if (!inputText.trim() && receiptImagesBase64.length === 0 && foodImagesBase64.length === 0 && !audioBase64) {
         throw new Error("いずれかの入力を提供してください（テキスト入力、レシート、食事の写真、または音声メモ）。");
       }
 
@@ -238,20 +323,29 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: inputText,
-          receiptImage: receiptBase64,
+          receiptImages: receiptImagesBase64,
           foodImages: foodImagesBase64,
           audio: audioBase64,
           audioMimeType: audioMime,
         }),
       });
 
-      const payload = await response.json();
+      const responseText = await response.text();
+      let payload: any = null;
+      try {
+        payload = JSON.parse(responseText);
+      } catch (parseError) {
+        if (!response.ok) {
+          throw new Error(`サーバーエラーが発生しました (ステータスコード: ${response.status})。しばらく時間をおいてから再度お試しください。`);
+        }
+        throw new Error("サーバーからの応答を正しく解析できませんでした。");
+      }
 
       if (!response.ok) {
-        if (payload.stack) {
+        if (payload && payload.stack) {
           console.error("Server-side error stack trace:", payload.stack);
         }
-        throw new Error(payload.error || "Gemini AIの分析処理に失敗しました。");
+        throw new Error(payload?.error || "Gemini AIの分析処理に失敗しました。");
       }
 
       if (payload.items && payload.items.length > 0) {
@@ -271,7 +365,7 @@ export default function App() {
             ...updatedLogs[existingIdx],
             items: [...originalList, ...analyzedItems],
             totalCost: updatedLogs[existingIdx].totalCost + analyzedItems.reduce((s, i) => s + (i.price || 0), 0),
-            hasReceipt: updatedLogs[existingIdx].hasReceipt || !!receiptFile,
+            hasReceipt: updatedLogs[existingIdx].hasReceipt || receiptFiles.length > 0,
             hasFoodPhoto: updatedLogs[existingIdx].hasFoodPhoto || foodFiles.length > 0,
             hasVoiceMemo: updatedLogs[existingIdx].hasVoiceMemo || !!audioBlob,
           };
@@ -281,7 +375,7 @@ export default function App() {
             date: activeDate,
             items: analyzedItems,
             totalCost: analyzedItems.reduce((s, i) => s + (i.price || 0), 0),
-            hasReceipt: !!receiptFile,
+            hasReceipt: receiptFiles.length > 0,
             hasFoodPhoto: foodFiles.length > 0,
             hasVoiceMemo: !!audioBlob,
           });
@@ -292,8 +386,8 @@ export default function App() {
 
         // Reset input fields on success
         setInputText("");
-        setReceiptFile(null);
-        setReceiptPreview(null);
+        setReceiptFiles([]);
+        setReceiptPreviews([]);
         setFoodFiles([]);
         setFoodPreviews([]);
         resetRecording();
@@ -391,8 +485,8 @@ export default function App() {
       setActiveTab("receipt");
       setInputText("毎朝通うサンパウロの老舗パン屋「Padaria Estrela」で購入した朝食。");
       // Load interactive dummy receipt view placeholder
-      setReceiptPreview("https://placehold.co/400x500/f8fafc/0f172a?text=Padaria+Estrela%0A%0A2x+Pao+Frances%0A1x+Preto+Cafe%0A1x+Manteiga%0A%0ATOTAL:+R$+8.50");
-      setReceiptFile(new File([], "receita_padaria.jpg", { type: "image/jpeg" }));
+      setReceiptPreviews(["https://placehold.co/400x500/f8fafc/0f172a?text=Padaria+Estrela%0A%0A2x+Pao+Frances%0A1x+Preto+Cafe%0A1x+Manteiga%0A%0ATOTAL:+R$+8.50"]);
+      setReceiptFiles([new File([], "receita_padaria.jpg", { type: "image/jpeg" })]);
     } else if (type === "dinner") {
       setActiveTab("image");
       setInputText("健康のために付け合わせの蒸しブロッコリーを大盛りにしたサケのソテー、夕食メニューです。");
@@ -535,42 +629,63 @@ export default function App() {
                 {activeTab === "receipt" && (
                   <div className="space-y-4">
                     <p className="text-[11px] text-slate-500 leading-normal">
-                      ポルトガル語の買い出しレシート、レストランの請求書をスキャンします。金額と食品名を標準化し自動読み込みします。
+                      ポルトガル語の買い出しレシート、レストランの請求書をスキャンします（複数選択して一括アップロード可能）。金額と食品名を標準化し自動読み込みします。
                     </p>
  
-                    {receiptPreview ? (
-                      <div className="relative border border-slate-100 rounded-2xl overflow-hidden bg-slate-50">
-                        {receiptPreview.includes("placehold.co") ? (
-                          <div className="p-4 font-mono text-[10px] text-zinc-600 bg-amber-50/50 whitespace-pre rounded-lg max-h-[160px] overflow-auto">
-                            {receiptPreview.split("text=")[1] ? decodeURIComponent(receiptPreview.split("text=")[1].replace(/\+/g, " ")) : "レシートプレビュー"}
+                    {receiptPreviews.length > 0 && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border border-slate-100 p-3 rounded-2xl bg-slate-50/50">
+                        {receiptPreviews.map((preview, index) => (
+                          <div key={index} className="relative aspect-video sm:aspect-square border border-slate-200 rounded-xl overflow-hidden bg-white group shadow-xs">
+                            {preview.includes("placehold.co") ? (
+                              <div className="p-3 font-mono text-[9px] text-zinc-600 bg-amber-50/50 whitespace-pre rounded-lg h-full overflow-auto leading-tight">
+                                {preview.split("text=")[1] ? decodeURIComponent(preview.split("text=")[1].replace(/\+/g, " ")) : "レシート"}
+                              </div>
+                            ) : (
+                              <img
+                                src={preview}
+                                alt={`Receipt preview ${index + 1}`}
+                                className="w-full h-full object-cover p-1 rounded-xl"
+                              />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveReceiptImage(index)}
+                              className="absolute top-1 right-1 p-1 rounded-full bg-slate-900/60 hover:bg-slate-900/80 text-white transition bubble-shadow"
+                              title="削除"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="absolute bottom-1 left-1.5 text-[9px] bg-slate-950/55 px-1.5 py-0.5 rounded-md text-white font-mono font-bold">
+                              #{index + 1}
+                            </span>
                           </div>
-                        ) : (
-                          <img
-                            src={receiptPreview}
-                            alt="Receipt preview"
-                            className="w-full max-h-[160px] object-contain mx-auto p-2"
+                        ))}
+
+                        {/* Add more placeholder in the grid */}
+                        <label className="flex flex-col items-center justify-center border border-dashed border-sage/40 rounded-xl hover:bg-sage/10 aspect-video sm:aspect-square cursor-pointer transition p-2">
+                          <Plus className="w-5 h-5 text-slate-400 mb-1" />
+                          <span className="text-[10px] font-semibold text-[#4A453F]">追加する</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => e.target.files && handleReceiptChangeMultiple(e.target.files)}
+                            className="hidden"
                           />
-                        )}
-                        <button
-                          onClick={() => {
-                            setReceiptFile(null);
-                            setReceiptPreview(null);
-                          }}
-                          className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/60 hover:bg-slate-900/80 text-white transition"
-                          title="画像を削除"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        </label>
                       </div>
-                    ) : (
+                    )}
+
+                    {receiptPreviews.length === 0 && (
                       <label className="flex flex-col items-center justify-center border border-dashed border-sage/40 rounded-2xl hover:bg-sage/10 p-6 cursor-pointer transition">
-                        <Upload className="w-8 h-8 text-slate-400 mb-2.5" />
+                        <Upload className="w-8 h-8 text-slate-400 mb-2.5 animate-bounce" />
                         <span className="text-xs font-semibold text-[#4A453F]">ポルトガル語レシートを添付</span>
-                        <span className="text-[10px] text-slate-450 mt-1">PNG, JPG, WEBP formats</span>
+                        <span className="text-[10px] text-slate-450 mt-1">複数選択・一括アップロード対応</span>
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => e.target.files?.[0] && handleReceiptChange(e.target.files[0])}
+                          multiple
+                          onChange={(e) => e.target.files && handleReceiptChangeMultiple(e.target.files)}
                           className="hidden"
                         />
                       </label>

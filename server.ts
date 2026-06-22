@@ -101,7 +101,7 @@ function getGeminiClient() {
 // API endpoint for analyzing receipt, food image, audio, or text
 app.post("/api/analyze", async (req, res) => {
   try {
-    const { text, receiptImage, foodImage, foodImages, audio, audioMimeType } = req.body;
+    const { text, receiptImage, receiptImages, foodImage, foodImages, audio, audioMimeType } = req.body;
 
     const parts: any[] = [];
 
@@ -128,7 +128,20 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
       parts.push({ text: `User written text/notes: ${text}` });
     }
 
-    if (receiptImage) {
+    if (Array.isArray(receiptImages) && receiptImages.length > 0) {
+      receiptImages.forEach((imgBase64, idx) => {
+        const parsed = parseBase64Data(imgBase64);
+        if (parsed) {
+          parts.push({
+            inlineData: {
+              mimeType: parsed.mimeType,
+              data: parsed.data
+            }
+          });
+          parts.push({ text: `The image above (Receipt Image #${idx + 1}) is a portuguese store receipt/invoice of grocery or restaurant foods.` });
+        }
+      });
+    } else if (receiptImage) {
       const parsed = parseBase64Data(receiptImage);
       if (parsed) {
         parts.push({

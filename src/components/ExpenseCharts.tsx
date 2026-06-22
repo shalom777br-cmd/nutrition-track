@@ -216,9 +216,7 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
             最長カロリー摂取
           </span>
           <span className="text-sm font-semibold text-slate-700">
-            {chartData.length
-              ? `${Math.max(...chartData.map((d) => d.calories)).toLocaleString()} kcal`
-              : "0 kcal"}
+            0 kcal
           </span>
         </div>
       </div>
