@@ -35,9 +35,9 @@ export default function App() {
   // --- Input Panel State ---
   const [activeTab, setActiveTab] = useState<"text" | "receipt" | "image" | "voice">(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("nutrigasto_active_tab") as any) || "text";
+      return (localStorage.getItem("nutrigasto_active_tab") as any) || "image";
     }
-    return "text";
+    return "image";
   });
   const [inputText, setInputText] = useState(() => {
     if (typeof window !== "undefined") {
@@ -114,10 +114,27 @@ export default function App() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       let recorder: MediaRecorder;
+      
+      let mimeType = "";
+      if (typeof MediaRecorder !== "undefined" && typeof MediaRecorder.isTypeSupported === "function") {
+        if (MediaRecorder.isTypeSupported("audio/webm")) {
+          mimeType = "audio/webm";
+        } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          mimeType = "audio/mp4";
+        } else if (MediaRecorder.isTypeSupported("audio/ogg")) {
+          mimeType = "audio/ogg";
+        }
+      }
+
       try {
-        recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+        if (mimeType) {
+          recorder = new MediaRecorder(stream, { mimeType });
+        } else {
+          recorder = new MediaRecorder(stream);
+        }
       } catch (e) {
-        recorder = new MediaRecorder(stream); // Fallback for browsers/Safari
+        console.warn("Failed with selected mimeType, falling back to default constructor", e);
+        recorder = new MediaRecorder(stream);
       }
 
       recorder.ondataavailable = (event) => {
@@ -454,6 +471,17 @@ export default function App() {
               {/* Analyzer Sources Switch Tabs */}
               <div className="grid grid-cols-4 p-1 bg-sage/10 rounded-xl border border-sage/5">
                 <button
+                  onClick={() => setActiveTab("image")}
+                  className={`flex flex-col items-center gap-1 py-1.5 text-[10px] font-bold rounded-lg transition cursor-pointer ${
+                    activeTab === "image"
+                      ? "bg-white text-olive shadow-xs"
+                      : "text-[#6B705C] hover:text-slate-800"
+                  }`}
+                >
+                  <Camera className="w-4 h-4" />
+                  料理写真
+                </button>
+                <button
                   onClick={() => setActiveTab("text")}
                   className={`flex flex-col items-center gap-1 py-1.5 text-[10px] font-bold rounded-lg transition cursor-pointer ${
                     activeTab === "text"
@@ -474,17 +502,6 @@ export default function App() {
                 >
                   <Upload className="w-4 h-4" />
                   レシート
-                </button>
-                <button
-                  onClick={() => setActiveTab("image")}
-                  className={`flex flex-col items-center gap-1 py-1.5 text-[10px] font-bold rounded-lg transition cursor-pointer ${
-                    activeTab === "image"
-                      ? "bg-white text-olive shadow-xs"
-                      : "text-[#6B705C] hover:text-slate-800"
-                  }`}
-                >
-                  <Camera className="w-4 h-4" />
-                  料理写真
                 </button>
                 <button
                   onClick={() => setActiveTab("voice")}

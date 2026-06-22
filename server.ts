@@ -192,7 +192,7 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-3.5-flash",
       contents: { parts: parts },
       config: {
         responseMimeType: "application/json",
