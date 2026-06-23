@@ -33,7 +33,7 @@ export default function DailyStats({ currentLog, logs, date }: DailyStatsProps) 
     }, {
       calories: 0, protein: 0, fat: 0, carbohydrates: 0,
       vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
-      vitaminC: 0, vitaminD: 0, vitaminE: 0, iron: 0, calcium: 0, zinc: 0, fiber: 0
+      vitaminC: 0, vitaminD: 0, vitaminE: 0, iron: 0, calcium: 0, magnesium: 0, zinc: 0, fiber: 0
     } as NutritionalMetrics);
 
   // Divide by 30 for daily estimate

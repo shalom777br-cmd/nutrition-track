@@ -35,6 +35,7 @@ export default function PortionList({ items, onAddItem, onDeleteItem, onUpdateMu
   const [vitaminC, setVitaminC] = useState("10");
   const [calcium, setCalcium] = useState("50");
   const [iron, setIron] = useState("1.5");
+  const [magnesium, setMagnesium] = useState("30");
 
   const toggleExpand = (id: string) => {
     setExpandedItemId(expandedItemId === id ? null : id);
@@ -42,7 +43,9 @@ export default function PortionList({ items, onAddItem, onDeleteItem, onUpdateMu
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!originalName || !japaneseName) return;
+    if (!originalName) return;
+
+    const resolvedJapaneseName = japaneseName.trim() || originalName;
 
     const customNutrition: NutritionalMetrics = {
       calories: parseFloat(calories) || 0,
@@ -59,13 +62,14 @@ export default function PortionList({ items, onAddItem, onDeleteItem, onUpdateMu
       vitaminE: 0.5,
       iron: parseFloat(iron) || 0,
       calcium: parseFloat(calcium) || 0,
+      magnesium: parseFloat(magnesium) || 0,
       zinc: 0.8,
       fiber: parseFloat(fiber) || 0,
     };
 
     onAddItem({
       originalName,
-      japaneseName,
+      japaneseName: resolvedJapaneseName,
       price: parseFloat(price) || 0,
       quantity,
       source,
@@ -198,10 +202,9 @@ export default function PortionList({ items, onAddItem, onDeleteItem, onUpdateMu
               />
             </div>
             <div>
-              <label className="block text-slate-500 font-medium mb-1">日本語名 / 正規化翻訳</label>
+              <label className="block text-slate-500 font-medium mb-1">日本語名 / 正規化翻訳 (任意)</label>
               <input
                 type="text"
-                required
                 value={japaneseName}
                 onChange={(e) => setJapaneseName(e.target.value)}
                 placeholder="例: フランスパン, 鶏肉グリル..."
@@ -318,6 +321,15 @@ export default function PortionList({ items, onAddItem, onDeleteItem, onUpdateMu
                   type="number"
                   value={iron}
                   onChange={(e) => setIron(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-lg p-1.5 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 mb-0.5">マグネシウム (mg)</label>
+                <input
+                  type="number"
+                  value={magnesium}
+                  onChange={(e) => setMagnesium(e.target.value)}
                   className="w-full bg-white border border-slate-200 rounded-lg p-1.5 focus:outline-none"
                 />
               </div>

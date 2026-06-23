@@ -15,6 +15,7 @@ export interface NutritionalMetrics {
   // Minerals
   iron: number;           // mg
   calcium: number;        // mg
+  magnesium: number;      // mg
   zinc: number;           // mg
   // Fiber
   fiber: number;          // g
@@ -63,6 +64,7 @@ export const RECOMMENDED_DAILY_INTAKE: NutritionalMetrics = {
   // Minerals
   iron: 7.5,
   calcium: 650,
+  magnesium: 320,
   zinc: 10.0,
   // Fiber
   fiber: 20,
@@ -83,6 +85,7 @@ export const NUTRIENT_UNITS: Record<keyof NutritionalMetrics, string> = {
   vitaminE: 'mg',
   calcium: 'mg',
   iron: 'mg',
+  magnesium: 'mg',
   zinc: 'mg',
   fiber: 'g',
 };
@@ -102,6 +105,7 @@ export const NUTRIENT_LABELS: Record<keyof NutritionalMetrics, string> = {
   vitaminE: 'ビタミンE',
   calcium: 'カルシウム',
   iron: '鉄分',
+  magnesium: 'マグネシウム',
   zinc: '亜鉛',
   fiber: '食物繊維',
 };

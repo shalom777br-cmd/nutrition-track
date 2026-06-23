@@ -16,6 +16,7 @@ export function createEmptyNutritionalMetrics(): NutritionalMetrics {
     vitaminE: 0,
     iron: 0,
     calcium: 0,
+    magnesium: 0,
     zinc: 0,
     fiber: 0,
   };
@@ -40,6 +41,7 @@ export function calculateTotalNutrition(items: FoodItem[]): NutritionalMetrics {
     totals.vitaminE += (item.nutrition.vitaminE || 0) * m;
     totals.iron += (item.nutrition.iron || 0) * m;
     totals.calcium += (item.nutrition.calcium || 0) * m;
+    totals.magnesium += (item.nutrition.magnesium || 0) * m;
     totals.zinc += (item.nutrition.zinc || 0) * m;
     totals.fiber += (item.nutrition.fiber || 0) * m;
   });

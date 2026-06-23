@@ -118,7 +118,7 @@ Your goals are:
    - "source": Identify which modal input it came from. MUST be one of: 'receipt', 'image', 'voice', or 'text'.
    - "price": The exact bill price (BRL or local) if extracted, or a realistic price estimate in BRL if it's on a shopping list, or 0 if it is a general plate meal photo with no specified purchase history.
    - "quantity": Parsed quantity/amount of item (e.g., '1 unit', '300g', '200ml').
-   - "nutrition": Calculate energy (calories in kcal), macronutrients PFC (protein, fat, carbohydrates in grams), key vitamins (vitaminA in μg RAE, vitaminB1 in mg, vitaminB2 in mg, vitaminB6 in mg, vitaminB12 in μg, vitaminC in mg, vitaminD in μg, vitaminE in mg), minerals (iron in mg, calcium in mg, zinc in mg), and dietary fiber in grams (fiber) using standard nutritional tables (USDA, Open Food Facts, Taco / Brazilian food database). Estimate realistic values for the given quantity.
+   - "nutrition": Calculate energy (calories in kcal), macronutrients PFC (protein, fat, carbohydrates in grams), key vitamins (vitaminA in μg RAE, vitaminB1 in mg, vitaminB2 in mg, vitaminB6 in mg, vitaminB12 in μg, vitaminC in mg, vitaminD in μg, vitaminE in mg), minerals (iron in mg, calcium in mg, magnesium in mg, zinc in mg), and dietary fiber in grams (fiber) using standard nutritional tables (USDA, Open Food Facts, Taco / Brazilian food database). Estimate realistic values for the given quantity.
 
 Additional user instruction:
 Please provide a comprehensive friendly health advisory feedback (advisorFeedback) in Japanese summarizing the nutrition of the overall meal list, identifying potential deficiency or surplus based on standard adult recommendations, and giving supportive health advice.`
@@ -250,6 +250,7 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
                             vitaminE: { type: Type.NUMBER, description: "Vitamin E in mg" },
                             iron: { type: Type.NUMBER, description: "Iron content in mg" },
                             calcium: { type: Type.NUMBER, description: "Calcium content in mg" },
+                            magnesium: { type: Type.NUMBER, description: "Magnesium content in mg" },
                             zinc: { type: Type.NUMBER, description: "Zinc content in mg" },
                             fiber: { type: Type.NUMBER, description: "Dietary fiber content in grams (g)" }
                           },
@@ -257,7 +258,7 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
                             "calories", "protein", "fat", "carbohydrates",
                             "vitaminA", "vitaminB1", "vitaminB2", "vitaminB6", "vitaminB12",
                             "vitaminC", "vitaminD", "vitaminE",
-                            "iron", "calcium", "zinc", "fiber"
+                            "iron", "calcium", "magnesium", "zinc", "fiber"
                           ]
                         }
                       },
@@ -301,7 +302,7 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
 
           if (isRetryable && attempt < maxRetries) {
             const delay = initialDelay * Math.pow(2, attempt - 1);
-            console.warn(`Gemini API returned retryable/fallback error (attempt ${attempt}/${maxRetries}) on model ${modelToUse}. Retrying with fallback in ${delay}ms...`, err);
+            console.log(`[Gemini Autorecovery] Moving to alternate model (attempt ${attempt}/${maxRetries}) from ${modelToUse} in ${delay}ms... Status active.`);
             await new Promise((resolve) => setTimeout(resolve, delay));
             continue;
           }
