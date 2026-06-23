@@ -8,11 +8,15 @@ interface PortionListProps {
   onAddItem: (item: Omit<FoodItem, "id">) => void;
   onDeleteItem: (id: string) => void;
   onUpdateMultiplier: (id: string, multiplier: number) => void;
+  onClearAllItems: () => void;
 }
 
-export default function PortionList({ items, onAddItem, onDeleteItem, onUpdateMultiplier }: PortionListProps) {
+export default function PortionList({ items, onAddItem, onDeleteItem, onUpdateMultiplier, onClearAllItems }: PortionListProps) {
   // Expanded item state to reveal full nutrition details per ingredient
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+
+  // Stateful bulk delete confirmation
+  const [showConfirmClear, setShowConfirmClear] = useState(false);
 
   // Manual input form state
   const [isAddingManual, setIsAddingManual] = useState(false);
@@ -115,13 +119,56 @@ export default function PortionList({ items, onAddItem, onDeleteItem, onUpdateMu
           </p>
         </div>
 
-        <button
-          onClick={() => setIsAddingManual(!isAddingManual)}
-          className="flex items-center gap-1 bg-sage/15 hover:bg-sage/25 border border-sage/10 text-olive text-[10px] font-bold px-2.5 py-1 rounded-lg transition cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          手動追加
-        </button>
+        <div className="flex items-center gap-2">
+          {items.length > 0 && (
+            <div className="relative">
+              {!showConfirmClear ? (
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmClear(true)}
+                  className="flex items-center gap-1 bg-rose-50 hover:bg-rose-100/85 border border-rose-100/70 text-rose-600 text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                  title="すべての食品を一括削除"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  一括削除
+                </button>
+              ) : (
+                <div className="flex items-center gap-1 bg-rose-50 border border-rose-200 rounded-lg p-0.5 shadow-sm animate-fadeIn">
+                  <span className="text-[9px] font-bold text-rose-700 px-1.5">本当に全削除？</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClearAllItems();
+                      setShowConfirmClear(false);
+                    }}
+                    className="bg-rose-600 hover:bg-rose-700 text-white text-[9px] font-extrabold px-2 py-0.5 rounded transition cursor-pointer"
+                  >
+                    はい
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmClear(false)}
+                    className="bg-slate-200 hover:bg-slate-300 text-slate-700 text-[9px] font-extrabold px-1.5 py-0.5 rounded transition cursor-pointer"
+                  >
+                    いいえ
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsAddingManual(!isAddingManual);
+              setShowConfirmClear(false);
+            }}
+            className="flex items-center gap-1 bg-sage/15 hover:bg-sage/25 border border-sage/10 text-olive text-[10px] font-bold px-2.5 py-1 rounded-lg transition cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            手動追加
+          </button>
+        </div>
       </div>
 
       {/* Manual Quick Add Form */}
@@ -385,7 +432,7 @@ export default function PortionList({ items, onAddItem, onDeleteItem, onUpdateMu
                         e.stopPropagation();
                         onDeleteItem(item.id);
                       }}
-                      className="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50/70 transition-colors"
                       title="このアイテムを削除"
                     >
                       <Trash2 className="w-4 h-4" />

@@ -77,7 +77,10 @@ export default function App() {
     let currentLogs: DailyLog[] = [];
     if (stored) {
       try {
-        currentLogs = JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          currentLogs = parsed;
+        }
       } catch (e) {
         console.error("Failed to parse local storage, loading defaults", e);
         currentLogs = [];
@@ -86,7 +89,7 @@ export default function App() {
     
     // Filter out dummy items or logs that were pre-populated (e.g. IDs starting with "log-1" through "log-4")
     // Keep only user generated logs or empty array so that charts do not show pre-populated dummy data lines
-    const cleanedLogs = currentLogs.filter(log => !["log-1", "log-2", "log-3", "log-4"].includes(log.id));
+    const cleanedLogs = currentLogs.filter(log => log && typeof log === "object" && Array.isArray(log.items) && !["log-1", "log-2", "log-3", "log-4"].includes(log.id));
     
     setLogs(cleanedLogs);
     localStorage.setItem("nutrigasto_logs_v2", JSON.stringify(cleanedLogs));
@@ -421,6 +424,21 @@ export default function App() {
       }
       return log;
     }).filter((log) => log.items.length > 0); // remove empty days if needed, or keep them
+    saveLogs(updated);
+  };
+
+  // --- Handler: Clear All Food Items for Active Date ---
+  const handleClearAllFoods = () => {
+    const updated = logs.map((log) => {
+      if (log.date === activeDate) {
+        return {
+          ...log,
+          items: [],
+          totalCost: 0,
+        };
+      }
+      return log;
+    }).filter((log) => log.items.length > 0);
     saveLogs(updated);
   };
 
@@ -885,6 +903,7 @@ export default function App() {
               onAddItem={handleAddManualFood}
               onDeleteItem={handleDeleteFood}
               onUpdateMultiplier={handleUpdateFoodMultiplier}
+              onClearAllItems={handleClearAllFoods}
             />
           </section>
 

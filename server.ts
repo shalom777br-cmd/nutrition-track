@@ -205,9 +205,13 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
     }
 
     // Helper function to retry content generation with exponential backoff and multi-model fallback
-    const generateContentWithRetry = async (aiClient: GoogleGenAI, maxRetries = 5, initialDelay = 1000) => {
+    const generateContentWithRetry = async (aiClient: GoogleGenAI, maxRetries = 6, initialDelay = 800) => {
       let attempt = 0;
-      const modelsToTry = ["gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-3.5-flash"];
+      const modelsToTry = [
+        "gemini-3.5-flash",
+        "gemini-3.1-flash-lite",
+        "gemini-flash-latest"
+      ];
       while (true) {
         const modelToUse = modelsToTry[attempt % modelsToTry.length];
         try {
@@ -268,11 +272,19 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
           });
         } catch (err: any) {
           attempt++;
-          const errStr = (JSON.stringify(err) + " " + (err?.message || "") + " " + String(err)).toLowerCase();
+          let errDetail = "";
+          try {
+            errDetail = JSON.stringify(err);
+          } catch (_) {
+            errDetail = String(err);
+          }
+          const errStr = (errDetail + " " + (err?.message || "") + " " + String(err)).toLowerCase();
           const isRetryable = 
             errStr.includes("503") || 
             errStr.includes("429") || 
             errStr.includes("500") ||
+            errStr.includes("404") ||
+            errStr.includes("not found") ||
             errStr.includes("unavailable") || 
             errStr.includes("high demand") ||
             errStr.includes("overburdened") ||
@@ -280,12 +292,16 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
             errStr.includes("quota") ||
             err?.status === 503 || 
             err?.status === 429 ||
+            err?.status === 404 ||
+            err?.status === 500 ||
             err?.code === 503 ||
-            err?.code === 429;
+            err?.code === 429 ||
+            err?.code === 404 ||
+            err?.code === 500;
 
           if (isRetryable && attempt < maxRetries) {
             const delay = initialDelay * Math.pow(2, attempt - 1);
-            console.warn(`Gemini API returned retryable error (attempt ${attempt}/${maxRetries}). Retrying with fallback in ${delay}ms...`, err);
+            console.warn(`Gemini API returned retryable/fallback error (attempt ${attempt}/${maxRetries}) on model ${modelToUse}. Retrying with fallback in ${delay}ms...`, err);
             await new Promise((resolve) => setTimeout(resolve, delay));
             continue;
           }

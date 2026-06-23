@@ -23,19 +23,20 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
   const [activeTab, setActiveTab] = useState<"expense" | "calories" | "both">("both");
 
   // Format historical days for the charts
-  const chartData = logs
+  const chartData = (logs || [])
+    .filter((log) => log && Array.isArray(log.items))
     .map((log) => {
       const totals = calculateTotalNutrition(log.items);
-      const parts = log.date.split("-");
-      const shortDate = parts.length === 3 ? `${parts[1]}/${parts[2]}` : log.date;
+      const parts = log.date ? log.date.split("-") : [];
+      const shortDate = parts.length === 3 ? `${parts[1]}/${parts[2]}` : (log.date || "");
       return {
         date: shortDate,
-        fullDate: log.date,
-        expense: log.totalCost,
-        calories: totals.calories,
-        protein: totals.protein,
-        carbs: totals.carbohydrates,
-        fat: totals.fat,
+        fullDate: log.date || "",
+        expense: log.totalCost || 0,
+        calories: totals.calories || 0,
+        protein: totals.protein || 0,
+        carbs: totals.carbohydrates || 0,
+        fat: totals.fat || 0,
       };
     })
     .sort((a, b) => a.fullDate.localeCompare(b.fullDate));
@@ -130,72 +131,74 @@ export default function ExpenseCharts({ logs }: ExpenseChartsProps) {
             <Coins className="w-8 h-8 opacity-40 animate-pulse" />
             <p className="text-xs">データがありません。食事を追加してください。</p>
           </div>
+        ) : activeTab === "expense" ? (
+          <ResponsiveContainer id="nutrigasto-expense-charts-expense" width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
+              <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="expense" name="食費費用 (R$)" fill="#6B705C" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : activeTab === "calories" ? (
+          <ResponsiveContainer id="nutrigasto-expense-charts-calories" width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
+              <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="calories"
+                name="摂取カロリー"
+                stroke="#CB997E"
+                fillOpacity={0.15}
+                fill="url(#colorCaloriesOnly)"
+              />
+              <defs>
+                <linearGradient id="colorCaloriesOnly" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#CB997E" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#CB997E" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
+            </AreaChart>
+          </ResponsiveContainer>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            {activeTab === "expense" ? (
-              <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="expense" name="食費費用 (R$)" fill="#6B705C" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            ) : activeTab === "calories" ? (
-              <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="calories"
-                  name="摂取カロリー"
-                  stroke="#CB997E"
-                  fillOpacity={0.15}
-                  fill="url(#colorCaloriesOnly)"
-                />
-                <defs>
-                  <linearGradient id="colorCaloriesOnly" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#CB997E" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#CB997E" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-              </AreaChart>
-            ) : (
-              /* BOTH: Combined area/bar visualization */
-              <AreaChart data={chartData} margin={{ top: 10, right: 5, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis yAxisId="left" stroke="#6B705C" fontSize={11} tickLine={false} />
-                <YAxis yAxisId="right" orientation="right" stroke="#CB997E" fontSize={11} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend iconSize={10} wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
-                <defs>
-                  <linearGradient id="colorCalories" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#CB997E" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#CB997E" stopOpacity={0.01} />
-                  </linearGradient>
-                </defs>
-                <Area
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="calories"
-                  name="摂取カロリー (kcal)"
-                  stroke="#CB997E"
-                  strokeWidth={2}
-                  fill="url(#colorCalories)"
-                />
-                <Area
-                  yAxisId="left"
-                  type="linear"
-                  dataKey="expense"
-                  name="食費費用 (R$)"
-                  stroke="#6B705C"
-                  strokeWidth={2.5}
-                  fill="none"
-                />
-              </AreaChart>
-            )}
+          /* BOTH: Combined area/bar visualization */
+          <ResponsiveContainer id="nutrigasto-expense-charts-both" width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 10, right: 5, left: -20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
+              <YAxis yAxisId="left" stroke="#6B705C" fontSize={11} tickLine={false} />
+              <YAxis yAxisId="right" orientation="right" stroke="#CB997E" fontSize={11} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend iconSize={10} wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
+              <defs>
+                <linearGradient id="colorCalories" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#CB997E" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#CB997E" stopOpacity={0.01} />
+                </linearGradient>
+              </defs>
+              <Area
+                yAxisId="right"
+                type="monotone"
+                dataKey="calories"
+                name="摂取カロリー (kcal)"
+                stroke="#CB997E"
+                strokeWidth={2}
+                fill="url(#colorCalories)"
+              />
+              <Area
+                yAxisId="left"
+                type="linear"
+                dataKey="expense"
+                name="食費費用 (R$)"
+                stroke="#6B705C"
+                strokeWidth={2.5}
+                fill="none"
+              />
+            </AreaChart>
           </ResponsiveContainer>
         )}
       </div>

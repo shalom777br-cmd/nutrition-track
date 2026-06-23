@@ -13,26 +13,28 @@ export default function DailyStats({ currentLog, logs, date }: DailyStatsProps) 
   // Toggle between single-day perspective and 30-day aggregate perspective
   const [viewMode, setViewMode] = useState<"daily" | "monthly">("daily");
 
-  const dailyTotals = currentLog ? calculateTotalNutrition(currentLog.items) : null;
+  const dailyTotals = (currentLog && currentLog.items.length > 0) ? calculateTotalNutrition(currentLog.items) : null;
   const currentCost = currentLog ? currentLog.totalCost : 0;
 
-  // Monthly aggregated totals
-  // Sum everything from the stored logs database
-  const totalMonthlyCost = logs.reduce((acc, log) => acc + log.totalCost, 0);
+   // Monthly aggregated totals
+  // Sum everything from the stored logs database safely
+  const totalMonthlyCost = (logs || []).reduce((acc, log) => acc + (log?.totalCost || 0), 0);
   
-  // Aggregate nutrition across all logs
-  const aggregatedNutrition: NutritionalMetrics = logs.reduce((acc, log) => {
-    const nutrition = calculateTotalNutrition(log.items);
-    Object.keys(acc).forEach((key) => {
-      const k = key as keyof NutritionalMetrics;
-      acc[k] = (acc[k] || 0) + (nutrition[k] || 0);
-    });
-    return acc;
-  }, {
-    calories: 0, protein: 0, fat: 0, carbohydrates: 0,
-    vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
-    vitaminC: 0, vitaminD: 0, vitaminE: 0, iron: 0, calcium: 0, zinc: 0, fiber: 0
-  } as NutritionalMetrics);
+  // Aggregate nutrition across all logs safely
+  const aggregatedNutrition: NutritionalMetrics = (logs || [])
+    .filter((log) => log && Array.isArray(log.items))
+    .reduce((acc, log) => {
+      const nutrition = calculateTotalNutrition(log.items);
+      Object.keys(acc).forEach((key) => {
+        const k = key as keyof NutritionalMetrics;
+        acc[k] = (acc[k] || 0) + (nutrition[k] || 0);
+      });
+      return acc;
+    }, {
+      calories: 0, protein: 0, fat: 0, carbohydrates: 0,
+      vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0,
+      vitaminC: 0, vitaminD: 0, vitaminE: 0, iron: 0, calcium: 0, zinc: 0, fiber: 0
+    } as NutritionalMetrics);
 
   // Divide by 30 for daily estimate
   const monthlyDailyEstimates: NutritionalMetrics = {} as any;

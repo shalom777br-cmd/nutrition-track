@@ -37,9 +37,8 @@ export default function RecommendationCard({ feedback, isAnalyzing }: Recommenda
       }
 
       // Handle bold texts inside standard paragraphs
-      const boldRegex = /\*\*(.*?)\*\*/g;
-      if (boldRegex.test(trimmed)) {
-        const parts = trimmed.split(boldRegex);
+      const parts = trimmed.split(/\*\*(.*?)\*\*/g);
+      if (parts.length > 1) {
         return (
           <p key={idx} className="text-xs text-slate-600 leading-relaxed my-1.5">
             {parts.map((p, pIdx) => pIdx % 2 === 1 ? <strong key={pIdx} className="text-slate-900 font-semibold">{p}</strong> : p)}
