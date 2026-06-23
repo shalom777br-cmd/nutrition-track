@@ -74,20 +74,22 @@ export default function App() {
   // Initialize and load from LocalStorage
   useEffect(() => {
     const stored = localStorage.getItem("nutrigasto_logs_v2");
+    let currentLogs: DailyLog[] = [];
     if (stored) {
       try {
-        setLogs(JSON.parse(stored));
+        currentLogs = JSON.parse(stored);
       } catch (e) {
         console.error("Failed to parse local storage, loading defaults", e);
-        const initial = getInitialLogs();
-        setLogs(initial);
-        localStorage.setItem("nutrigasto_logs_v2", JSON.stringify(initial));
+        currentLogs = [];
       }
-    } else {
-      const initial = getInitialLogs();
-      setLogs(initial);
-      localStorage.setItem("nutrigasto_logs_v2", JSON.stringify(initial));
     }
+    
+    // Filter out dummy items or logs that were pre-populated (e.g. IDs starting with "log-1" through "log-4")
+    // Keep only user generated logs or empty array so that charts do not show pre-populated dummy data lines
+    const cleanedLogs = currentLogs.filter(log => !["log-1", "log-2", "log-3", "log-4"].includes(log.id));
+    
+    setLogs(cleanedLogs);
+    localStorage.setItem("nutrigasto_logs_v2", JSON.stringify(cleanedLogs));
   }, []);
 
   // Save changes to localStorage helper
@@ -550,12 +552,12 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           
           {/* TOP LEFT: AI Multimodal Input Console */}
-          <section className="lg:col-span-7 space-y-6">
+          <section className="lg:col-span-6 space-y-6">
             {/* Analyzer Console Card */}
             <div className="card bg-white/85 p-4 shadow-sm space-y-3">
               <div>
                 <h2 className="font-display text-base font-bold text-slate-800 font-serif">
-                  AIマルチモーダル解析入力
+                  入力
                 </h2>
                 <p className="text-[11px] text-slate-500 leading-tight">
                   食品の情報が含まれる素材をアップロード・録音してください
@@ -869,7 +871,10 @@ export default function App() {
                 )}
               </button>
             </div>
+          </section>
 
+          {/* TOP RIGHT: Daily Stats and Portion List */}
+          <section className="lg:col-span-6 space-y-6">
             <DailyStats
               currentLog={currentLog}
               logs={logs}
@@ -881,62 +886,6 @@ export default function App() {
               onDeleteItem={handleDeleteFood}
               onUpdateMultiplier={handleUpdateFoodMultiplier}
             />
-          </section>
-
-          {/* TOP RIGHT: Simulator / Helper Controls */}
-          <section className="lg:col-span-5 space-y-6">
-            {/* Quick Experience Simulator Panel (Human-centric helper) */}
-            <div className="card bg-white/85 p-5 shadow-sm space-y-4">
-              <div>
-                <h4 className="font-display font-bold text-slate-800 text-xs uppercase tracking-wide font-serif">
-                  模擬インプット・シミュレーター
-                </h4>
-                <p className="text-[10px] text-slate-500">
-                  動作確認用のポルトガル語入力サンプルをロードして、AIのレスポンス（日本語への食品名正規化、PFC算出）を確認できます。
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2.5">
-                <button
-                  onClick={() => loadExampleData("padaria")}
-                  className="w-full text-left bg-white/70 hover:bg-sage/15 border border-sage/10 rounded-2xl p-3 flex items-center gap-3 transition cursor-pointer"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 shrink-0 text-xs">
-                    🍞
-                  </div>
-                  <div className="flex-1 min-w-0 font-sans text-xs">
-                    <div className="font-semibold text-slate-700">🥖 朝食：パン屋（Padaria）レシート</div>
-                    <div className="text-[10px] text-slate-500 truncate">pão francês (フランスパン), café (コーヒー)...</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => loadExampleData("dinner")}
-                  className="w-full text-left bg-white/70 hover:bg-sage/15 border border-sage/10 rounded-2xl p-3 flex items-center gap-3 transition cursor-pointer"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 text-xs">
-                    🥩
-                  </div>
-                  <div className="flex-1 min-w-0 font-sans text-xs">
-                    <div className="font-semibold text-slate-700">🥗 夕食：サーモンステーキと温野菜</div>
-                    <div className="text-[10px] text-slate-500 truncate">filé de salmão (サケ of ソテー) などの写真...</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => loadExampleData("voice")}
-                  className="w-full text-left bg-white/70 hover:bg-sage/15 border border-sage/10 rounded-2xl p-3 flex items-center gap-3 transition cursor-pointer"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 shrink-0 text-xs">
-                    🎙️
-                  </div>
-                  <div className="flex-1 min-w-0 font-sans text-xs">
-                    <div className="font-semibold text-slate-700">🎤 ボイス：ポルトガル語音声入力</div>
-                    <div className="text-[10px] text-slate-500 truncate">pão de queijo (ポンデケージョ) やお昼ご飯の話...</div>
-                  </div>
-                </button>
-              </div>
-            </div>
           </section>
 
         </div>
