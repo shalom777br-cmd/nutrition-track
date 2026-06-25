@@ -85,7 +85,7 @@ export default function DailyStats({ currentLog, logs, date }: DailyStatsProps) 
             栄養成分 ＆ コスト集計
           </h3>
           <p className="text-[10px] text-slate-500">
-            推奨摂取量と比較した健康バランスメーター
+            50歳女性(運動少なめ)の推定平均必要量 (※一部目標量・目安量) との比較
           </p>
         </div>
 
@@ -308,7 +308,7 @@ export default function DailyStats({ currentLog, logs, date }: DailyStatsProps) 
                 <div>
                   <p className="font-serif">栄養不足アラート ({deficiencies.length}件)</p>
                   <p className="text-[9px] text-clay-text/90 font-normal">
-                    以下の栄養素が成人の1日推奨基準値の70%未満となっています：
+                    以下の栄養素が50歳女性(運動少なめ)の1日推定平均必要量等の70%未満となっています：
                   </p>
                 </div>
               </div>

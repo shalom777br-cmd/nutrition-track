@@ -18,7 +18,8 @@ import {
   RefreshCw,
   HelpCircle,
   FileAudio,
-  PlusCircle
+  PlusCircle,
+  X
 } from "lucide-react";
 import { DailyLog, FoodItem, RECOMMENDED_DAILY_INTAKE } from "./types";
 import { getInitialLogs, calculateTotalNutrition } from "./utils/nutrition";
@@ -340,10 +341,11 @@ export default function App() {
       try {
         payload = JSON.parse(responseText);
       } catch (parseError) {
+        console.error("Failed to parse server response as JSON. Response text:", responseText, "Error details:", parseError);
         if (!response.ok) {
           throw new Error(`サーバーエラーが発生しました (ステータスコード: ${response.status})。しばらく時間をおいてから再度お試しください。`);
         }
-        throw new Error("サーバーからの応答を正しく解析できませんでした。");
+        throw new Error(`サーバーからの応答を正しく解析できませんでした。ステータス: ${response.status}. 応答の最初の100文字: "${responseText.substring(0, 100)}..."`);
       }
 
       if (!response.ok) {
@@ -854,15 +856,21 @@ export default function App() {
 
               {/* API and Validation Error Alert Box */}
               {apiError && (
-                <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4 flex gap-2.5 text-xs text-rose-800 leading-relaxed font-sans">
-                  <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                  <div>
-                    <h5 className="font-semibold text-rose-900 mb-0.5">アップロード失敗</h5>
-                    <p>{apiError}</p>
-                    <p className="text-[10px] text-rose-600/80 mt-1">
-                      ※AI StudioのSecretsに有効な <strong>GEMINI_API_KEY</strong> が設定されていることを確認してください。未登録の場合は、右側の「手動追加」ボタンから栄養素を入力してシミュレーションできます。
-                    </p>
+                <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4 flex justify-between gap-2.5 text-xs text-rose-800 leading-relaxed font-sans relative">
+                  <div className="flex gap-2.5">
+                    <AlertTriangle className="w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h5 className="font-semibold text-rose-900 mb-0.5">アップロード失敗</h5>
+                      <p>{apiError}</p>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setApiError(null)}
+                    className="text-rose-400 hover:text-rose-700 p-1 rounded-lg transition shrink-0 cursor-pointer"
+                    title="エラー表示を閉じる"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               )}
 

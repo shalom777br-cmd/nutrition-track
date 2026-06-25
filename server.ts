@@ -97,6 +97,11 @@ function getGeminiClient() {
   return aiClient;
 }
 
+// Health check endpoint to verify backend status
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", time: new Date().toISOString(), hasApiKey: !!process.env.GEMINI_API_KEY });
+});
+
 // API endpoint for analyzing receipt, food image, audio, or text
 app.post("/api/analyze", async (req, res) => {
   try {
@@ -120,7 +125,7 @@ Your goals are:
    - "nutrition": Calculate energy (calories in kcal), macronutrients PFC (protein, fat, carbohydrates in grams), key vitamins (vitaminA in μg RAE, vitaminB1 in mg, vitaminB2 in mg, vitaminB6 in mg, vitaminB12 in μg, vitaminC in mg, vitaminD in μg, vitaminE in mg), minerals (iron in mg, calcium in mg, magnesium in mg, zinc in mg), and dietary fiber in grams (fiber) using standard nutritional tables (USDA, Open Food Facts, Taco / Brazilian food database). Estimate realistic values for the given quantity.
 
 Additional user instruction:
-Please provide a comprehensive friendly health advisory feedback (advisorFeedback) in Japanese summarizing the nutrition of the overall meal list, identifying potential deficiency or surplus based on standard adult recommendations, and giving supportive health advice.`
+Please provide a comprehensive friendly health advisory feedback (advisorFeedback) in Japanese summarizing the nutrition of the overall meal list, identifying potential deficiency or surplus based on the Estimated Average Requirements (推定平均必要量 / 指標値) for a 50-year-old female with low physical activity level (50歳女性、運動少なめ / 身体活動レベルⅠ: 推定エネルギー必要量 1650kcal, たんぱく質 40g, 脂質 45g, 炭水化物 225g, カルシウム 550mg, 鉄 5.5mg, マグネシウム 240mg, 食物繊維 18g 等), and giving supportive health advice.`
     });
 
     if (text) {
@@ -318,13 +323,39 @@ Please provide a comprehensive friendly health advisory feedback (advisorFeedbac
     }
 
     let cleaned = jsonStr.trim();
-    if (cleaned.startsWith("```")) {
+    
+    // Attempt robust JSON extraction to handle models inserting conversational text around the block
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    const firstBracket = cleaned.indexOf('[');
+    const lastBracket = cleaned.lastIndexOf(']');
+
+    let startIdx = -1;
+    let endIdx = -1;
+
+    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+      startIdx = firstBrace;
+      endIdx = lastBrace;
+    } else if (firstBracket !== -1) {
+      startIdx = firstBracket;
+      endIdx = lastBracket;
+    }
+
+    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+      cleaned = cleaned.substring(startIdx, endIdx + 1);
+    } else if (cleaned.startsWith("```")) {
       cleaned = cleaned.replace(/^```(?:json)?\n?/i, "");
       cleaned = cleaned.replace(/\n?```$/, "");
       cleaned = cleaned.trim();
     }
 
-    const payload = JSON.parse(cleaned);
+    let payload: any;
+    try {
+      payload = JSON.parse(cleaned);
+    } catch (parseError: any) {
+      console.error("[JSON Parsing Error] Failed to parse cleaned string:", cleaned);
+      throw new Error(`Gemini response could not be parsed as valid JSON: ${parseError.message}`);
+    }
     return res.json(payload);
 
   } catch (error: any) {

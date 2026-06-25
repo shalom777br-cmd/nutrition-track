@@ -48,26 +48,26 @@ export interface DailyLog {
 }
 
 export const RECOMMENDED_DAILY_INTAKE: NutritionalMetrics = {
-  calories: 2000,
-  protein: 60,
-  fat: 55,
-  carbohydrates: 250,
+  calories: 1650, // 推定エネルギー必要量 (EER)
+  protein: 40,    // 推定平均必要量 (EAR)
+  fat: 45,        // 目標量 (DG)
+  carbohydrates: 225, // 目標量 (DG)
   // Vitamins
-  vitaminA: 800,
-  vitaminB1: 1.2,
-  vitaminB2: 1.4,
-  vitaminB6: 1.3,
-  vitaminB12: 2.4,
-  vitaminC: 100,
-  vitaminD: 5.5,
-  vitaminE: 6.0,
+  vitaminA: 500,  // 推定平均必要量 (EAR)
+  vitaminB1: 0.9, // 推定平均必要量 (EAR)
+  vitaminB2: 1.0, // 推定平均必要量 (EAR)
+  vitaminB6: 1.0, // 推定平均必要量 (EAR)
+  vitaminB12: 2.0, // 推定平均必要量 (EAR)
+  vitaminC: 85,   // 推定平均必要量 (EAR)
+  vitaminD: 8.5,  // 目安量 (AI)
+  vitaminE: 6.0,  // 目安量 (AI)
   // Minerals
-  iron: 7.5,
-  calcium: 650,
-  magnesium: 320,
-  zinc: 10.0,
+  iron: 5.5,      // 推定平均必要量 (EAR) (閉経後)
+  calcium: 550,   // 推定平均必要量 (EAR)
+  magnesium: 240, // 推定平均必要量 (EAR)
+  zinc: 6.0,      // 推定平均必要量 (EAR)
   // Fiber
-  fiber: 20,
+  fiber: 18,      // 目標量 (DG)
 };
 
 export const NUTRIENT_UNITS: Record<keyof NutritionalMetrics, string> = {
