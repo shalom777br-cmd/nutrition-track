@@ -334,6 +334,9 @@ export default function App() {
       } catch (parseError) {
         console.error("Failed to parse server response as JSON. Response text:", responseText, "Error details:", parseError);
         if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error(`サーバーのエンドポイントが見つからないか、コンテナの起動・再起動処理が行われている可能性があります (ステータスコード: 404)。数秒おいてから、再度お試しください。`);
+          }
           throw new Error(`サーバーエラーが発生しました (ステータスコード: ${response.status})。しばらく時間をおいてから再度お試しください。`);
         }
         throw new Error(`サーバーからの応答を正しく解析できませんでした。ステータス: ${response.status}. 応答の最初の100文字: "${responseText.substring(0, 100)}..."`);
