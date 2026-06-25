@@ -40,12 +40,7 @@ export default function App() {
     }
     return "image";
   });
-  const [inputText, setInputText] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("nutrigasto_draft_text") || "";
-    }
-    return "";
-  });
+  const [inputText, setInputText] = useState("");
   const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
   const [receiptPreviews, setReceiptPreviews] = useState<string[]>([]);
   const [foodFiles, setFoodFiles] = useState<File[]>([]);
@@ -55,10 +50,6 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("nutrigasto_active_tab", activeTab);
   }, [activeTab]);
-
-  useEffect(() => {
-    localStorage.setItem("nutrigasto_draft_text", inputText);
-  }, [inputText]);
 
   // --- Voice Memo State ---
   const [audioState, setAudioState] = useState<"idle" | "recording" | "playback_ready">("idle");
@@ -637,13 +628,23 @@ export default function App() {
                 
                 {/* 1. TEXT MEMO PANEL */}
                 {activeTab === "text" && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative">
                     <textarea
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       placeholder="食べたもののテキストを自由に入力してください。例：マクドナルドでビッグマック1個とポテトMサイズを食べた"
-                      className="w-full h-18 text-xs border border-sage/30 focus:border-olive focus:ring-0 p-2 outline-none rounded-xl bg-white/55 placeholder:text-slate-450 leading-relaxed"
+                      className="w-full h-18 text-xs border border-sage/30 focus:border-olive focus:ring-0 p-2 pr-8 outline-none rounded-xl bg-white/55 placeholder:text-slate-450 leading-relaxed"
                     />
+                    {inputText && (
+                      <button
+                        type="button"
+                        onClick={() => setInputText("")}
+                        className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 transition p-1 rounded-full hover:bg-slate-100 cursor-pointer"
+                        title="テキストを消去"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -844,12 +845,24 @@ export default function App() {
                       </span>
                     </div>
 
-                    <textarea
-                      value={inputText}
-                      onChange={(e) => setInputText(e.target.value)}
-                      placeholder="補足テキスト記述がある場合はこちらに入力（任意）"
-                      className="w-full text-xs font-sans p-2 border border-slate-200 rounded-xl bg-white outline-none focus:border-olive"
-                    />
+                    <div className="relative">
+                      <textarea
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        placeholder="補足テキスト記述がある場合はこちらに入力（任意）"
+                        className="w-full text-xs font-sans p-2 pr-8 border border-slate-200 rounded-xl bg-white outline-none focus:border-olive"
+                      />
+                      {inputText && (
+                        <button
+                          type="button"
+                          onClick={() => setInputText("")}
+                          className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 transition p-1 rounded-full hover:bg-slate-100 cursor-pointer"
+                          title="テキストを消去"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
