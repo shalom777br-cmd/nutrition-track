@@ -12,6 +12,16 @@ const PORT = 3000;
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+// Custom logging middleware to trace HTTP requests, paths, and response codes
+app.use((req, res, next) => {
+  const bodyKeys = req.body ? Object.keys(req.body).join(", ") : "empty";
+  console.log(`[HTTP TRACE] ${req.method} ${req.url} | Body Keys: [${bodyKeys}]`);
+  res.on("finish", () => {
+    console.log(`[HTTP TRACE RESPONSE] ${req.method} ${req.url} -> STATUS ${res.statusCode}`);
+  });
+  next();
+});
+
 // Helper to extract mimeType and base64 string from data URL safely
 function parseBase64Data(dataUrl: string) {
   if (typeof dataUrl !== "string" || !dataUrl.trim()) return null;
