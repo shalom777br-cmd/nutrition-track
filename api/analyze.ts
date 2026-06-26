@@ -1,3 +1,9 @@
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY!,
+});
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
@@ -14,36 +20,22 @@ export default async function handler(req, res) {
       });
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text,
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: text,
+    });
 
-    const data = await response.json();
+    return res.status(200).json({
+      success: true,
+      response: result.text,
+    });
 
-    return res.status(200).json(data);
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error(error);
 
     return res.status(500).json({
-      error: "Internal Server Error",
-      detail: err.message,
+      success: false,
+      error: error.message,
     });
   }
 }
